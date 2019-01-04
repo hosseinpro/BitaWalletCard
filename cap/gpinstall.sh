@@ -1,0 +1,1 @@
+java -jar gp/gp.jar -install BitaWalletCard.cap -d

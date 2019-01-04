@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="BitaWalletCard" default="capFile" basedir="."> 
+  <target name="jcpro">
+    <taskdef name="javacard" classname="pro.javacard.ant.JavaCard" classpath="gp/ant-javacard.jar"/>
+  </target>
+  <target name="capFile" depends="jcpro">
+    <javacard>
+      <cap jckit="gp/jc303_kit"
+      aid="FFBC000000" 
+      package="BitaWalletCard" 
+      output="BitaWalletCard.cap" 
+      version="1.0" 
+      sources="../src/main/java/BitaWalletCard">
+        <applet class="BitaWalletCard.BitaWalletCard" 
+        aid="FFBC00000001"/>
+        <import exps="lib/exp" 
+        jar="../lib/specialmethod.jar"/>
+      </cap>
+    </javacard>
+  </target>
+</project>
