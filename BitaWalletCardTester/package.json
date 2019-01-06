@@ -12,7 +12,6 @@
   "dependencies": {
     "bs58": "^4.0.1",
     "pcsclite": "^0.6.0",
-    "request": "^2.88.0",
-    "sleep": "^5.2.3"
+    "request": "^2.88.0"
   }
 }

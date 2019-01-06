@@ -9,7 +9,6 @@ const request = require("request");
 const BitaWalletCard = require("../src/BitaWalletCard.js");
 const bitaWalletCard = new BitaWalletCard(transmit.bind(this));
 const bs58 = require("bs58");
-const sleep = require("sleep");
 
 const jcardsim = "jcardsim";
 let cardreaderList;
