@@ -55,6 +55,20 @@ module.exports = class BitaWalletCard {
     return arr1.join("");
   }
 
+  static hex2Bytes(hexStr) {
+    for (var bytes = [], c = 0; c < hexStr.length; c += 2)
+      bytes.push(parseInt(hexStr.substr(c, 2), 16));
+    return bytes;
+  }
+
+  static bytes2Hex(byteArr) {
+    for (var hex = [], i = 0; i < byteArr.length; i++) {
+      hex.push((byteArr[i] >>> 4).toString(16));
+      hex.push((byteArr[i] & 0xf).toString(16));
+    }
+    return hex.join("");
+  }
+
   static padHex(hex, numberOfDigits) {
     const str = "0000000000000000" + hex;
     const r = str.substring(str.length - numberOfDigits);
