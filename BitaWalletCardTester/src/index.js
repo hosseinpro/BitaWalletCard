@@ -139,7 +139,8 @@ var recursiveAsyncReadLine = function() {
         bitaWalletCard
           .getAddressList(inputs[1], inputs[2])
           .then(res => {
-            print(JSON.stringify(res.addressInfo).replace(",{", ",\n{"));
+            addressInfo = res.addressInfo;
+            print(JSON.stringify(addressInfo).replace(",{", ",\n{"));
           })
           .catch(err => {
             print(err);
@@ -149,7 +150,8 @@ var recursiveAsyncReadLine = function() {
         bitaWalletCard
           .getSubWalletAddressList(inputs[1], inputs[2])
           .then(res => {
-            print(JSON.stringify(res.addressInfo).replace(",{", ",\n{"));
+            addressInfo = res.addressInfo;
+            print(JSON.stringify(addressInfo).replace(",{", ",\n{"));
           })
           .catch(err => {
             print(err);
