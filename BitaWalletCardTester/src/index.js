@@ -29,18 +29,6 @@ var recursiveAsyncReadLine = function() {
     switch (inputs[0]) {
       case "test":
         console.log("Hello test");
-
-        // let b58Address = "mvyQZq6UvkMB97K9bUeHp4VVS1N7SeDzRX";
-        // console.log(bs58.decode(b58Address).toString("Hex"));
-        // let ss = BitaWalletCard.b58Decode(b58Address);
-        // console.log(ss);
-
-        // let byteArrAddress =
-        //   "6fa98aa1ed2089eed4d22a9de6c4d2994fe323a14a7b3a1862";
-        // let b58Address = bs58.encode(Buffer.from(byteArrAddress, "hex"));
-        // console.log(b58Address);
-        // let b58Address2 = BitaWalletCard.b58Encode(byteArrAddress);
-        // console.log(b58Address2);
         break;
       case "boot":
         cardreaderList = listReaders();
@@ -151,20 +139,7 @@ var recursiveAsyncReadLine = function() {
         bitaWalletCard
           .getAddressList(inputs[1], inputs[2])
           .then(res => {
-            const keyPathFirst = inputs[1];
-            const address_index = parseInt(keyPathFirst.substring(10, 14), 16);
-            const keyPath_no_index = keyPathFirst.substring(0, 10);
-
-            addressInfo = [];
-            for (let i = 0; i < res.addressList.length; i++) {
-              const address = BitaWalletCard.b58Encode(res.addressList[i]);
-              const keyPath =
-                keyPath_no_index +
-                BitaWalletCard.padHex((address_index + i).toString(16), 4);
-              addressInfo[i] = { address, keyPath };
-            }
-
-            print(JSON.stringify(addressInfo).replace(",{", ",\n{"));
+            print(JSON.stringify(res.addressInfo).replace(",{", ",\n{"));
           })
           .catch(err => {
             print(err);
@@ -174,13 +149,7 @@ var recursiveAsyncReadLine = function() {
         bitaWalletCard
           .getSubWalletAddressList(inputs[1], inputs[2])
           .then(res => {
-            addressInfo = [];
-            for (let i = 0; i < res.addressList.length; i++) {
-              const address = BitaWalletCard.b58Encode(res.addressList[i]);
-              addressInfo[i] = { address };
-            }
-
-            print(JSON.stringify(addressInfo).replace(",{", ",\n{"));
+            print(JSON.stringify(res.addressInfo).replace(",{", ",\n{"));
           })
           .catch(err => {
             print(err);
@@ -270,8 +239,7 @@ var recursiveAsyncReadLine = function() {
         {
           const spend = parseInt(inputs[1]);
           const fee = parseInt(inputs[2]);
-          const destAddress = BitaWalletCard.b58Decode(inputs[3]);
-          bitaWalletCard.requestSignTx(spend, fee, destAddress).catch(err => {
+          bitaWalletCard.requestSignTx(spend, fee, inputs[3]).catch(err => {
             print(err);
           });
 
