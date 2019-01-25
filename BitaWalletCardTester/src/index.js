@@ -8,7 +8,6 @@ const pcsc = pcsclite();
 const request = require("request");
 const BitaWalletCard = require("../src/BitaWalletCard.js");
 const bitaWalletCard = new BitaWalletCard(transmit.bind(this));
-const bs58 = require("bs58");
 
 const jcardsim = "jcardsim";
 let cardreaderList;
@@ -28,6 +27,21 @@ var recursiveAsyncReadLine = function() {
   rl.question("> ", function(answer) {
     const inputs = answer.split(" ");
     switch (inputs[0]) {
+      case "test":
+        console.log("Hello test");
+
+        // let b58Address = "mvyQZq6UvkMB97K9bUeHp4VVS1N7SeDzRX";
+        // console.log(bs58.decode(b58Address).toString("Hex"));
+        // let ss = BitaWalletCard.b58Decode(b58Address);
+        // console.log(ss);
+
+        // let byteArrAddress =
+        //   "6fa98aa1ed2089eed4d22a9de6c4d2994fe323a14a7b3a1862";
+        // let b58Address = bs58.encode(Buffer.from(byteArrAddress, "hex"));
+        // console.log(b58Address);
+        // let b58Address2 = BitaWalletCard.b58Encode(byteArrAddress);
+        // console.log(b58Address2);
+        break;
       case "boot":
         cardreaderList = listReaders();
         connect("0");
@@ -143,9 +157,7 @@ var recursiveAsyncReadLine = function() {
 
             addressInfo = [];
             for (let i = 0; i < res.addressList.length; i++) {
-              const address = bs58.encode(
-                Buffer.from(res.addressList[i], "hex")
-              );
+              const address = BitaWalletCard.b58Encode(res.addressList[i]);
               const keyPath =
                 keyPath_no_index +
                 BitaWalletCard.padHex((address_index + i).toString(16), 4);
@@ -164,9 +176,7 @@ var recursiveAsyncReadLine = function() {
           .then(res => {
             addressInfo = [];
             for (let i = 0; i < res.addressList.length; i++) {
-              const address = bs58.encode(
-                Buffer.from(res.addressList[i], "hex")
-              );
+              const address = BitaWalletCard.b58Encode(res.addressList[i]);
               addressInfo[i] = { address };
             }
 
@@ -260,7 +270,7 @@ var recursiveAsyncReadLine = function() {
         {
           const spend = parseInt(inputs[1]);
           const fee = parseInt(inputs[2]);
-          const destAddress = bs58.decode(inputs[3]).toString("Hex");
+          const destAddress = BitaWalletCard.b58Decode(inputs[3]);
           bitaWalletCard.requestSignTx(spend, fee, destAddress).catch(err => {
             print(err);
           });
@@ -315,7 +325,7 @@ function print(message) {
 }
 
 function completer(line) {
-  const completions = "boot listreaders connect disconnect transmit selectapplet perso verifypin changepin unblockpin getlabel setlabel importmasterseedplain generatemasterseed requestremovemasterSeed removemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
+  const completions = "test boot listreaders connect disconnect transmit selectapplet perso verifypin changepin unblockpin getlabel setlabel importmasterseedplain generatemasterseed requestremovemasterSeed removemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
     " "
   );
   const hits = completions.filter(c => c.startsWith(line));

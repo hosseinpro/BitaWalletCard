@@ -10,7 +10,6 @@
   "author": "Hosseinpro",
   "license": "ISC",
   "dependencies": {
-    "bs58": "^4.0.1",
     "pcsclite": "^0.6.0",
     "request": "^2.88.0"
   }
