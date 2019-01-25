@@ -196,8 +196,17 @@ module.exports = class BitaWalletCard {
     //ISO/IEC 7816-4 2005 Section 7.5.6
     //P2=00: global PIN
     const apduVerifyPIN = "00 20 00 00 04" + BitaWalletCard.ascii2hex(cardPIN);
-    return this.transmit(apduVerifyPIN, responseAPDU => {
-      return { result: true };
+    return new Promise((resolve, reject) => {
+      this.transmit(apduVerifyPIN, responseAPDU => {
+        resolve({ result: true });
+      }).catch(sw => {
+        if (sw.substring(0, 3) === "63C") {
+          const leftTries = parseInt(sw.substring(3), 16);
+          reject(leftTries);
+        } else {
+          reject(sw);
+        }
+      });
     });
   }
 
