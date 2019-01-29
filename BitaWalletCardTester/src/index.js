@@ -70,11 +70,6 @@ var recursiveAsyncReadLine = function() {
           });
         });
         break;
-      case "perso":
-        bitaWalletCard.setPUK(inputs[1]).catch(err => {
-          print(err);
-        });
-        break;
       case "verifypin":
         bitaWalletCard.verifyPIN(inputs[1]).catch(err => {
           print(err);
@@ -82,11 +77,6 @@ var recursiveAsyncReadLine = function() {
         break;
       case "changepin":
         bitaWalletCard.changePIN(inputs[1]).catch(err => {
-          print(err);
-        });
-        break;
-      case "unblockpin":
-        bitaWalletCard.unblockPIN(inputs[1]).catch(err => {
           print(err);
         });
         break;
@@ -295,7 +285,7 @@ function print(message) {
 }
 
 function completer(line) {
-  const completions = "test boot listreaders connect disconnect transmit selectapplet perso verifypin changepin unblockpin getlabel setlabel importmasterseedplain generatemasterseed requestremovemasterSeed removemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
+  const completions = "test boot listreaders connect disconnect transmit selectapplet verifypin changepin getlabel setlabel importmasterseedplain generatemasterseed requestremovemasterSeed removemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
     " "
   );
   const hits = completions.filter(c => c.startsWith(line));

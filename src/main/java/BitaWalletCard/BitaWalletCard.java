@@ -9,7 +9,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     public static final byte[] AID = { (byte) 0xFF, (byte) 0xBC, (byte) 0x00, (byte) 0x00, (byte) 0x00, (byte) 0x01 };
 
     private static final byte PIN_SIZE = 4;
-    private static final byte PUK_SIZE = 8;
+    private static final byte PIN_TRY_LIMIT = 15;
     private static final byte SERIALNUMBER_SIZE = 8;
     private static final short SW_PIN_INCORRECT_TRIES_LEFT = (short) 0x63C0;
     private static final short LABEL_SIZE_MAX = 16;
@@ -26,10 +26,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     private static final short CL_SIGN_TX = 5;
 
     private static OwnerPIN pin;
-    private static OwnerPIN puk;
     private static OwnerPIN yesCode;
     private static RandomData randomData;
-    private static boolean isPersonalized;
 
     private static byte[] serialNumber;
     private byte[] tempSerialNumber;
@@ -70,11 +68,9 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         display = new Display();
         bip = new BIP();
 
-        pin = new OwnerPIN((byte) 3, PIN_SIZE);
+        pin = new OwnerPIN(PIN_TRY_LIMIT, PIN_SIZE);
         pin.update(defaultPIN, (short) 0, PIN_SIZE);
         pin.resetAndUnblock();
-
-        puk = new OwnerPIN((byte) 15, PUK_SIZE);
 
         yesCode = new OwnerPIN((byte) 3, PIN_SIZE);
 
@@ -142,12 +138,6 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
                 commandLock = CL_NONE;
             } else if ((ins == (byte) 0x24) && (p1 == (byte) 0x01) && (p2 == (byte) 0x00)) {
                 processChangePIN(apdu);
-                commandLock = CL_NONE;
-            } else if ((ins == (byte) 0x24) && (p1 == (byte) 0x31) && (p2 == (byte) 0x00)) {
-                processSetPUK(apdu);
-                commandLock = CL_NONE;
-            } else if ((ins == (byte) 0x2C) && (p1 == (byte) 0x01) && (p2 == (byte) 0x00)) {
-                processUnblockPIN(apdu);
                 commandLock = CL_NONE;
             } else if ((ins == (byte) 0xC0) && (p1 == (byte) 0xBC) && (p2 == (byte) 0x03)) {
                 processGenerateMasterSeed(apdu);
@@ -307,42 +297,6 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
         pin.update(buf, OFFSET_CDATA, PIN_SIZE);
         pin.resetAndUnblock();
-    }
-
-    private void processSetPUK(APDU apdu) {
-        if (isPersonalized == true) {
-            ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);
-        }
-
-        apdu.setIncomingAndReceive();
-        byte[] buf = apdu.getBuffer();
-        short lc = apdu.getIncomingLength();
-        if (lc != PUK_SIZE) {
-            ISOException.throwIt(SW_WRONG_LENGTH);
-        }
-
-        puk.update(buf, OFFSET_CDATA, PUK_SIZE);
-        puk.resetAndUnblock();
-
-        isPersonalized = true;
-    }
-
-    private void processUnblockPIN(APDU apdu) {
-        apdu.setIncomingAndReceive();
-        byte[] buf = apdu.getBuffer();
-        short lc = apdu.getIncomingLength();
-        if (lc != PUK_SIZE) {
-            ISOException.throwIt(SW_WRONG_LENGTH);
-        }
-
-        if (puk.check(buf, OFFSET_CDATA, PUK_SIZE) == false) {
-            ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
-        }
-
-        pin.update(defaultPIN, (short) 0, PIN_SIZE);
-        pin.resetAndUnblock();
-
-        puk.reset();
     }
 
     private void processGenerateMasterSeed(APDU apdu) {

@@ -266,26 +266,6 @@ module.exports = class BitaWalletCard {
     });
   }
 
-  setPUK(cardPUK) {
-    //ISO/IEC 7816-4 2005 Section 7.5.7
-    //p1=31: it's PUK and just new puk is included
-    //P2=00: global PUK
-    const apduSetPUK = "00 24 31 00 08" + BitaWalletCard.ascii2hex(cardPUK);
-    return this.transmit(apduSetPUK, responseAPDU => {
-      return { result: true };
-    });
-  }
-
-  unblockPIN(cardPUK) {
-    //ISO/IEC 7816-4 2005 Section 7.5.10
-    //p1=01: new pin is not included
-    //P2=00: global PIN
-    const apduUnblockPIN = "00 2C 01 00 08" + BitaWalletCard.ascii2hex(cardPUK);
-    return this.transmit(apduUnblockPIN, responseAPDU => {
-      return { result: true };
-    });
-  }
-
   generateMasterSeed() {
     //ISO/IEC 7816-8 2004 Section 5.1
     //P1=84: key generation with no output
