@@ -1,3 +1,5 @@
+// Version: 1.1
+
 "use strict";
 
 module.exports = class BitaWalletCard {
@@ -178,13 +180,38 @@ module.exports = class BitaWalletCard {
 
     return { fund, inputSection, signerKeyPaths };
   }
+
   ////End of Utils
 
   ////Begin of card functions
+
   selectApplet() {
     const apduSelectApplect = "00 A4 04 00 06 FFBC00000001";
     return this.transmit(apduSelectApplect, responseAPDU => {
       return { result: true };
+    });
+  }
+
+  requestWipe() {
+    const apduRequestWipe = "00 E1 00 00 00";
+    return this.transmit(apduRequestWipe, responseAPDU => {
+      return { result: true };
+    });
+  }
+
+  wipe(yesCode, newPIN, newLabel) {
+    const apduWipe = "00 E2 00 00 04" + BitaWalletCard.ascii2hex(yesCode);
+    return new Promise((resolve, reject) => {
+      this.transmit(apduWipe, responseAPDU => {
+        this.verifyPIN("1234")
+          .then(() => this.changePIN(newPIN))
+          .then(() => this.verifyPIN(newPIN))
+          .then(() => this.setLabel(newLabel))
+          .then(() => this.generateMasterSeed().then(resolve({ result: true })))
+          .catch(error => {
+            reject(error);
+          });
+      });
     });
   }
 

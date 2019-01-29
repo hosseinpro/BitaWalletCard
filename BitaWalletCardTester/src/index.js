@@ -70,6 +70,16 @@ var recursiveAsyncReadLine = function() {
           });
         });
         break;
+      case "requestwipe":
+        bitaWalletCard.requestWipe().catch(err => {
+          print(err);
+        });
+        break;
+      case "wipe": //yesCode, newPIN, newLabel
+        bitaWalletCard.wipe(inputs[1], inputs[2], inputs[3]).catch(err => {
+          print(err);
+        });
+        break;
       case "verifypin":
         bitaWalletCard.verifyPIN(inputs[1]).catch(err => {
           print(err);
@@ -285,7 +295,7 @@ function print(message) {
 }
 
 function completer(line) {
-  const completions = "test boot listreaders connect disconnect transmit selectapplet verifypin changepin getlabel setlabel importmasterseedplain generatemasterseed requestremovemasterSeed removemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
+  const completions = "test boot listreaders connect disconnect transmit selectapplet requestwipe wipe verifypin changepin getlabel setlabel importmasterseedplain generatemasterseed requestremovemasterSeed removemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
     " "
   );
   const hits = completions.filter(c => c.startsWith(line));

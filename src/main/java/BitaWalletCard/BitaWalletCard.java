@@ -19,11 +19,12 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     public static final byte ALG_EC_SVDP_DH_PLAIN_XY = (byte) 6;// Not defined until JC 3.0.5
 
     private static final short CL_NONE = 0;
-    private static final short CL_REMOVE_MSEED = 1;
-    private static final short CL_EXPORT_MSEED = 2;
-    private static final short CL_EXPORT_SUBWALLET = 3;
-    private static final short CL_GENERATE_SUBWALLET = 4;
-    private static final short CL_SIGN_TX = 5;
+    private static final short CL_WIPE = 1;
+    private static final short CL_REMOVE_MSEED = 2;
+    private static final short CL_EXPORT_MSEED = 3;
+    private static final short CL_EXPORT_SUBWALLET = 4;
+    private static final short CL_GENERATE_SUBWALLET = 5;
+    private static final short CL_SIGN_TX = 6;
 
     private static OwnerPIN pin;
     private static OwnerPIN yesCode;
@@ -72,7 +73,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         pin.update(defaultPIN, (short) 0, PIN_SIZE);
         pin.resetAndUnblock();
 
-        yesCode = new OwnerPIN((byte) 3, PIN_SIZE);
+        yesCode = new OwnerPIN((byte) 1, PIN_SIZE);
 
         label = new byte[LABEL_SIZE_MAX];
         labelLength = Util.arrayCopyNonAtomic(defaultLabel, (short) 0, label, (short) 0, (short) defaultLabel.length);
@@ -121,7 +122,16 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         }
 
         try {
-            if ((ins == (byte) 0xB0) && (p1 == (byte) 0x2F) && (p2 == (byte) 0xE2)) {
+            if ((ins == (byte) 0xE1) && (p1 == (byte) 0x00) && (p2 == (byte) 0x00)) {
+                processRequestWipe(apdu);
+                commandLock = CL_WIPE;
+            } else if ((ins == (byte) 0xE2) && (p1 == (byte) 0x00) && (p2 == (byte) 0x00)) {
+                if (commandLock != CL_WIPE) {
+                    ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);
+                }
+                processWipe(apdu);
+                commandLock = CL_NONE;
+            } else if ((ins == (byte) 0xB0) && (p1 == (byte) 0x2F) && (p2 == (byte) 0xE2)) {
                 processGetSerialNumber(apdu);
                 commandLock = CL_NONE;
             } else if ((ins == (byte) 0xB0) && (p1 == (byte) 0xBC) && (p2 == (byte) 0x01)) {
@@ -225,6 +235,28 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         apdu.setOutgoing();
         apdu.setOutgoingLength((short) 200);
         apdu.sendBytesLong(main500, offset, (short) 200);
+    }
+
+    private void processRequestWipe(APDU apdu) {
+        short offset = generateYesCode(main500, (short) 0);
+
+        display.displayText(main500, (short) 0, offset, scratch515, (short) 0);
+    }
+
+    private void processWipe(APDU apdu) {
+        apdu.setIncomingAndReceive();
+        byte[] buf = apdu.getBuffer();
+        short offData = apdu.getOffsetCdata();
+
+        verifyYesCode(buf, offData);
+
+        Util.arrayFillNonAtomic(mseed, (short) 0, MSEED_SIZE, (byte) 0);
+        mseedInitialized = false;
+
+        pin.update(defaultPIN, (short) 0, PIN_SIZE);
+        pin.resetAndUnblock();
+
+        labelLength = Util.arrayCopyNonAtomic(defaultLabel, (short) 0, label, (short) 0, (short) defaultLabel.length);
     }
 
     private void processGetSerialNumber(APDU apdu) {
