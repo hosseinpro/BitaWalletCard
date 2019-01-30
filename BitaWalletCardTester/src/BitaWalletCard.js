@@ -26,8 +26,21 @@ module.exports = class BitaWalletCard {
         .then(res => {
           const responseAPDU = this.parseResponseAPDU(res);
           if (responseAPDU.sw === "9000") {
+            if (this.data === undefined) {
+              this.data = "";
+            }
+            responseAPDU.data = this.data + responseAPDU.data;
+            this.data = "";
             const result = responseFunction(responseAPDU);
             resolve(result);
+          } else if (responseAPDU.sw.substring(0, 2) === "61") {
+            const apduGetResponse = "00 BF 00 00 00";
+            this.data += responseAPDU.data;
+            this.transmit(apduGetResponse, responseFunction)
+              .then(res => resolve(res))
+              .catch(error => {
+                reject(error);
+              });
           } else {
             //reject({ sw: responseAPDU.sw });
             reject(responseAPDU.sw);

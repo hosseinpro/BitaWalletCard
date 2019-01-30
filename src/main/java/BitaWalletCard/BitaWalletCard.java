@@ -56,6 +56,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
     private byte[] main500;
     private byte[] scratch515;
+    private short responseRemainingLength;
+    private short responseOffset;
 
     private static Display display;
     private static BIP bip;
@@ -215,6 +217,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
                 }
                 processSignTransaction(apdu);
                 commandLock = CL_NONE;
+            } else if (ins == (byte) 0xBF) {
+                processGetResponse(apdu);
             } else if (ins == (byte) 0xAA) {
                 test(apdu);
             } else {
@@ -230,11 +234,16 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         byte[] buf = apdu.getBuffer();
         short lc = apdu.getIncomingLength();
 
-        short offset = Util.makeShort(buf[OFFSET_CDATA], buf[(short) (OFFSET_CDATA + 1)]);
+        short length = (short) 1500;
+        for (short i = 0; i < length; i++) {
+            main500[i] = (byte) (i % (short) 256);
+        }
 
-        apdu.setOutgoing();
-        apdu.setOutgoingLength((short) 200);
-        apdu.sendBytesLong(main500, offset, (short) 200);
+        sendLongResponse(apdu, (short) 0, length);
+
+        // apdu.setOutgoing();
+        // apdu.setOutgoingLength((short) 200);
+        // apdu.sendBytesLong(main500, offset, (short) 200);
     }
 
     private void processRequestWipe(APDU apdu) {
@@ -565,9 +574,11 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short reslutLen = bip.bip44DerivePath(mseed, (short) 0, MSEED_SIZE, buf, OFFSET_CDATA, main500, (short) 0,
                 buf[OFFSET_CDATA + 7], main500, (short) 32, scratch515, (short) 0);
 
-        apdu.setOutgoing();
-        apdu.setOutgoingLength(reslutLen);
-        apdu.sendBytesLong(main500, (short) 32, reslutLen);
+        // apdu.setOutgoing();
+        // apdu.setOutgoingLength(reslutLen);
+        // apdu.sendBytesLong(main500, (short) 32, reslutLen);
+
+        sendLongResponse(apdu, (short) 32, reslutLen);
     }
 
     private void processGetSubWalletAddressList(APDU apdu) {
@@ -603,9 +614,11 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             moffset = Util.arrayCopyNonAtomic(scratch515, (short) 97, main500, moffset, (short) 25);
         }
 
-        apdu.setOutgoing();
-        apdu.setOutgoingLength(moffset);
-        apdu.sendBytesLong(main500, (short) 0, moffset);
+        // apdu.setOutgoing();
+        // apdu.setOutgoingLength(moffset);
+        // apdu.sendBytesLong(main500, (short) 0, moffset);
+
+        sendLongResponse(apdu, (short) 0, moffset);
     }
 
     private void processRequestGenerateSubWallet(APDU apdu) {
@@ -712,6 +725,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         // apdu.setOutgoing();
         // apdu.setOutgoingLength(signedTxLength);
         // apdu.sendBytesLong(main500, (short) 0, signedTxLength);
+
+        sendLongResponse(apdu, (short) 0, signedTxLength);
     }
 
     private void processRequestExportSubWallet(APDU apdu) {
@@ -989,9 +1004,11 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short signedTxLength = signTransaction(buf, inputSectionIndex, buf, signerKeyPathsIndex, scratch515, (short) 0,
                 moffset, main500, (short) 0, scratch515, moffset);
 
-        apdu.setOutgoing();
-        apdu.setOutgoingLength(signedTxLength);
-        apdu.sendBytesLong(main500, (short) 0, signedTxLength);
+        // apdu.setOutgoing();
+        // apdu.setOutgoingLength(signedTxLength);
+        // apdu.sendBytesLong(main500, (short) 0, signedTxLength);
+
+        sendLongResponse(apdu, (short) 0, signedTxLength);
     }
 
     private short generateKCV(byte[] inBubber, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
@@ -1005,4 +1022,56 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
         return b58Len;
     }
+
+    private void sendLongResponse(APDU apdu, short responseOffset1, short responseLength1) {
+        if (responseLength1 > (short) 256) {
+            responseOffset = responseOffset1;
+            responseRemainingLength = responseLength1;
+            ISOException.throwIt(SW_BYTES_REMAINING_00);
+        } else {
+            apdu.setOutgoing();
+            apdu.setOutgoingLength(responseLength1);
+            apdu.sendBytesLong(main500, responseOffset1, responseLength1);
+        }
+    }
+
+    private void processGetResponse(APDU apdu) {
+        if (pin.isValidated() == false) {
+            ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
+        }
+
+        if (responseRemainingLength == (short) 0) {
+            ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);
+        }
+
+        apdu.setIncomingAndReceive();
+        byte[] buf = apdu.getBuffer();
+        short lc = apdu.getIncomingLength();
+
+        short offset = responseOffset;
+        short length = 0;
+        if (responseRemainingLength >= (short) 256) {
+            length = (short) 256;
+        } else {
+            length = responseRemainingLength;
+        }
+
+        responseOffset += length;
+        responseRemainingLength -= length;
+
+        short sw = 0;
+        if (responseRemainingLength >= (short) 256) {
+            sw = SW_BYTES_REMAINING_00;
+        } else if (responseRemainingLength > (short) 0) {
+            sw = (short) (SW_BYTES_REMAINING_00 | responseRemainingLength);
+        } else {
+            sw = SW_NO_ERROR;
+        }
+
+        apdu.setOutgoing();
+        apdu.setOutgoingLength(length);
+        apdu.sendBytesLong(main500, offset, length);
+        ISOException.throwIt(sw);
+    }
+
 }

@@ -28,7 +28,50 @@ var recursiveAsyncReadLine = function() {
     const inputs = answer.split(" ");
     switch (inputs[0]) {
       case "test":
-        console.log("Hello test");
+        console.log("command apdu chaining test:");
+        bitaWalletCard
+          .requestRemoveMasterSeed()
+          .then(() => bitaWalletCard.removeMasterSeed("1234"))
+          .then(() =>
+            bitaWalletCard
+              .importMasterSeedPlain(
+                "4c445bc98dc8cb9c6815fae9f7786581fed6731cd9054e0a261cdf0ef4e8e1e32aed630b7293382b5f281c729441448af131b70505363bc9a5e025f553bb36e0"
+              )
+              .then(() => bitaWalletCard.getAddressList("6D2C0000000000", "1"))
+              .then(res => {
+                addressInfo = res.addressInfo;
+                addressInfo[0].txs = [];
+                let tx = {};
+                tx.txHash =
+                  "a896270a198aa2146cdec81d18bc1fd358d4355f8d21be8e5335fae22c09244e";
+                tx.utxo = "0";
+                tx.value = "100000";
+                addressInfo[0].txs[0] = Object.assign({}, tx);
+              })
+              .then(() => {
+                const spend = 5000;
+                const fee = 500;
+                bitaWalletCard.requestSignTx(
+                  spend,
+                  fee,
+                  "1LwhKD4cJUqE2ZqvEkAEmpUuUNb9TDve4B"
+                );
+                inputSection = BitaWalletCard.buildInputSection(
+                  spend,
+                  fee,
+                  addressInfo
+                );
+              })
+              .then(() =>
+                bitaWalletCard.signTx(
+                  "1234",
+                  inputSection.fund,
+                  "6D2C0100010000",
+                  inputSection.inputSection,
+                  inputSection.signerKeyPaths
+                )
+              )
+          );
         break;
       case "boot":
         cardreaderList = listReaders();
@@ -55,8 +98,10 @@ var recursiveAsyncReadLine = function() {
       case "disconnect":
         disconnect();
         break;
-      case "transmit":
-        transmit(inputs[1]);
+      case "transmit": //apdu
+        bitaWalletCard.transmit(inputs[1], responseAPDU => {
+          console.log(responseAPDU.data);
+        });
         break;
       case "selectapplet":
         let log = "";
@@ -80,12 +125,12 @@ var recursiveAsyncReadLine = function() {
           print(err);
         });
         break;
-      case "verifypin":
+      case "verifypin": //pin
         bitaWalletCard.verifyPIN(inputs[1]).catch(err => {
           print(err);
         });
         break;
-      case "changepin":
+      case "changepin": //newPin
         bitaWalletCard.changePIN(inputs[1]).catch(err => {
           print(err);
         });
@@ -95,12 +140,12 @@ var recursiveAsyncReadLine = function() {
           print(err);
         });
         break;
-      case "setlabel":
+      case "setlabel": //newLabel
         bitaWalletCard.setLabel(inputs[1]).catch(err => {
           print(err);
         });
         break;
-      case "importmasterseedplain":
+      case "importmasterseedplain": //masterSeedPlain
         bitaWalletCard.importMasterSeedPlain(inputs[1]).catch(err => {
           print(err);
         });
@@ -115,7 +160,7 @@ var recursiveAsyncReadLine = function() {
           print(err);
         });
         break;
-      case "removemasterseed":
+      case "removemasterseed": //yesCode
         bitaWalletCard.removeMasterSeed(inputs[1]).catch(err => {
           print(err);
         });
@@ -125,19 +170,20 @@ var recursiveAsyncReadLine = function() {
           print(err);
         });
         break;
-      case "exportmasterseed":
+      case "exportmasterseed": //yesCode
         bitaWalletCard.exportMasterSeed(inputs[1]).catch(err => {
           print(err);
         });
         break;
-      case "importmasterseed":
+      case "importmasterseed": //encryptedMasterSeedAndTransportKeyPublic
         bitaWalletCard.importMasterSeed(inputs[1]).catch(err => {
           print(err);
         });
         break;
       case "getaddresslist": //keyPath, count
+        const count = parseInt(inputs[2]);
         bitaWalletCard
-          .getAddressList(inputs[1], inputs[2])
+          .getAddressList(inputs[1], count)
           .then(res => {
             addressInfo = res.addressInfo;
             print(JSON.stringify(addressInfo).replace(",{", ",\n{"));
@@ -147,8 +193,9 @@ var recursiveAsyncReadLine = function() {
           });
         break;
       case "getsubwalletaddresslist": //numOfSub, firstSubWalletNumber
+        const numOfSub = parseInt(inputs[1]);
         bitaWalletCard
-          .getSubWalletAddressList(inputs[1], inputs[2])
+          .getSubWalletAddressList(numOfSub, inputs[2])
           .then(res => {
             addressInfo = res.addressInfo;
             print(JSON.stringify(addressInfo).replace(",{", ",\n{"));
