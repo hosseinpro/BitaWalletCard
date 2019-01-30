@@ -501,10 +501,17 @@ module.exports = class BitaWalletCard {
       inputSection +
       signerKeyPaths;
 
-    let payloadLength =
-      "00" + BitaWalletCard.padHex((payload.length / 2).toString(16), 4);
-    const apduGenerateSubWalletTx =
-      "00 C2 BC 06 " + payloadLength + payload + "0000";
+    if (payload.length / 2 <= 255) {
+      payloadLength = BitaWalletCard.padHex(
+        (payload.length / 2).toString(16),
+        2
+      );
+    } else {
+      //extended length
+      payloadLength =
+        "00" + BitaWalletCard.padHex((payload.length / 2).toString(16), 4);
+    }
+    const apduGenerateSubWalletTx = "00 C2 BC 06 " + payloadLength + payload; // + "0000";
     return this.transmit(apduGenerateSubWalletTx, responseAPDU => {
       const signedTx = responseAPDU.data;
       return { signedTx };
@@ -605,9 +612,18 @@ module.exports = class BitaWalletCard {
       inputSection +
       signerKeyPaths;
 
-    let payloadLength =
-      "00" + BitaWalletCard.padHex((payload.length / 2).toString(16), 4);
-    const apduSignTx = "00 32 00 01 " + payloadLength + payload + "0000";
+    let payloadLength;
+    if (payload.length / 2 <= 255) {
+      payloadLength = BitaWalletCard.padHex(
+        (payload.length / 2).toString(16),
+        2
+      );
+    } else {
+      //extended length
+      payloadLength =
+        "00" + BitaWalletCard.padHex((payload.length / 2).toString(16), 4);
+    }
+    const apduSignTx = "00 32 00 01 " + payloadLength + payload; // + "0000";
     return this.transmit(apduSignTx, responseAPDU => {
       const signedTx = responseAPDU.data;
       return { signedTx };

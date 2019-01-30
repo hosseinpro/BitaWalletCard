@@ -33,7 +33,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     private static byte[] serialNumber;
     private byte[] tempSerialNumber;
     private static final byte version[] = { 'B', ' ', '1', '.', '0' };
-    private static final byte defaultLabel[] = { 'B', 'l', 'a', 'c', 'k', 'C', 'a', 'r', 'd' };
+    private static final byte defaultLabel[] = { 'B', 'i', 't', 'a', 'W', 'a', 'l', 'l', 'e', 't' };
     private static byte[] label;
     private static short labelLength;
     private static final byte defaultPIN[] = { '1', '2', '3', '4' };
@@ -56,8 +56,10 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
     private byte[] main500;
     private byte[] scratch515;
+
     private short responseRemainingLength;
     private short responseOffset;
+    private short commandOffset;
 
     private static Display display;
     private static BIP bip;
@@ -964,6 +966,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         apdu.setIncomingAndReceive();
         byte[] buf = apdu.getBuffer();
         short offData = apdu.getOffsetCdata();
+        short lc = apdu.getIncomingLength();
 
         verifyYesCode(buf, offData);
 
@@ -1073,5 +1076,4 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         apdu.sendBytesLong(main500, offset, length);
         ISOException.throwIt(sw);
     }
-
 }
