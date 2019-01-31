@@ -40,6 +40,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     private byte P2PKH[] = { 0x19, 0x76, (byte) 0xa9, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, (byte) 0x88, (byte) 0xac };
     private static final byte subwalletPath[] = { 'm', 44, 0, 0, 1, 0, 0 }; // m'/44'/0'(BTC)/0'/1(internal)/0
+    private static final byte zero[] = { 0x00 };
 
     private static byte[] mseed;
     private static boolean mseedInitialized;
@@ -877,57 +878,71 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short offset = scratchOffset;
 
         signedTxIndex = (short) (headerIndex + 5);// begin of outputs
-        // for (...)
-        // 32B hash + 4B UTXO
-        signedTxIndex = Util.arrayCopyNonAtomic(inputSection, (short) (inputSectionOffset + 1), signedTx, signedTxIndex,
-                (short) 36);
+        short inputCount = inputSection[inputSectionOffset];
+        inputSectionOffset++;
+        for (short i = 0; i < inputCount; i++) {
+            short inputSectionOffsetInputX = (short) (inputSectionOffset + (short) (i * 66));
+            // 32B hash + 4B UTXO
+            signedTxIndex = Util.arrayCopyNonAtomic(inputSection, inputSectionOffsetInputX, signedTx, signedTxIndex,
+                    (short) 36);
 
-        sha256.reset();
-        sha256.update(signedTx, headerIndex, (short) 5);// header
-        sha256.update(inputSection, (short) (inputSectionOffset + 1), (short) 66);// inputs
-        sha256.update(outputSection, outputSectionOffset, outputSectionLength);// outputs
-        sha256.doFinal(signedTx, footerIndex, (short) 8, scratch322, offset);// footer
-        // hold tx hash in scratch 0..31
-
-        bip.bip44DerivePath(mseed, (short) 0, MSEED_SIZE, signerKeyPaths, signerKeyPathsOffset, scratch322,
-                (short) (offset + 32), (short) 1, scratch322, (short) (offset + 64), scratch322, (short) (offset + 90));
-        // hold prikey in scratch 32..63 [32]
-
-        Secp256k1.setCommonCurveParameters(signKey);
-        signKey.setS(scratch322, (short) (offset + 32), (short) 32);
-        ecdsaSignature.init(signKey, Signature.MODE_SIGN);
-        short scriptLenIndex = signedTxIndex;
-        signedTxIndex++;// 1B script Len
-        short signatureLen = 0;
-        short sIndex = 0;
-        do {
-            signatureLen = ecdsaSignature.sign(scratch322, offset, (short) 32, scratch322, (short) (offset + 64));
-            // 30 45 02 20 XXXX 02 20 XXXX
-            sIndex = (short) (offset + 64 + 4 - 1);
-            sIndex += scratch322[sIndex];
-            sIndex += 3;
-            if (scratch322[sIndex] == 0x00) {
-                sIndex++;
+            sha256.reset();
+            sha256.update(signedTx, headerIndex, (short) 5);// header
+            for (short j = 0; j < inputCount; j++) {// inputs
+                if (i == j) {// complete
+                    sha256.update(inputSection, (short) (inputSectionOffset + (short) (j * 66)), (short) 66);
+                } else {// cut script
+                    sha256.update(inputSection, (short) (inputSectionOffset + (short) (j * 66)), (short) 36);
+                    sha256.update(zero, (short) 0, (short) 1);
+                    sha256.update(inputSection, (short) ((short) (inputSectionOffset + (short) (j * 66)) + 62),
+                            (short) 4);
+                }
             }
-            // if s > N/2
-        } while (MathMod256.ucmp(scratch322, sIndex, Secp256k1.SECP256K1_Rdiv2, (short) 0,
-                (short) Secp256k1.SECP256K1_Rdiv2.length) > 0);
+            sha256.update(outputSection, outputSectionOffset, outputSectionLength);// outputs
+            sha256.doFinal(signedTx, footerIndex, (short) 8, scratch322, offset);// footer
+            // hold tx hash in scratch 0..31
 
-        Util.arrayCopyNonAtomic(scratch322, (short) (offset + 64), signedTx, (short) (signedTxIndex + 1), signatureLen);
+            bip.bip44DerivePath(mseed, (short) 0, MSEED_SIZE, signerKeyPaths, signerKeyPathsOffset, scratch322,
+                    (short) (offset + 32), (short) 1, scratch322, (short) (offset + 64), scratch322,
+                    (short) (offset + 90));
+            // hold prikey in scratch 32..63 [32]
 
-        signedTx[signedTxIndex] = (byte) (signatureLen + 1);// sig len + 1
-        signedTxIndex += signatureLen + 1;
-        signedTx[signedTxIndex++] = 0x01;// hash type
-        short pubKeyLen = bip.ec256PrivateKeyToPublicKey(scratch322, (short) (offset + 32), signedTx,
-                (short) (signedTxIndex + 1), true);
-        signedTx[signedTxIndex++] = (byte) pubKeyLen;
-        signedTxIndex += pubKeyLen;
-        // x = 1B [sig len byte] + sigLen + 1B [hash type] + 1B [pubkey Len] + pubKeyLen
-        signedTx[scriptLenIndex] = (byte) (3 + signatureLen + pubKeyLen);
-        // 63 = 1B len + 32B hash + 4B UTXO + 26B script
-        signedTxIndex = Util.arrayCopyNonAtomic(inputSection, (short) (inputSectionOffset + 63), signedTx,
-                signedTxIndex, (short) 4);// sequence
-        // end for
+            Secp256k1.setCommonCurveParameters(signKey);
+            signKey.setS(scratch322, (short) (offset + 32), (short) 32);
+            ecdsaSignature.init(signKey, Signature.MODE_SIGN);
+            short scriptLenIndex = signedTxIndex;
+            signedTxIndex++;// 1B script Len
+            short signatureLen = 0;
+            short sIndex = 0;
+            do {
+                signatureLen = ecdsaSignature.sign(scratch322, offset, (short) 32, scratch322, (short) (offset + 64));
+                // 30 45 02 20 XXXX 02 20 XXXX
+                sIndex = (short) (offset + 64 + 4 - 1);
+                sIndex += scratch322[sIndex];
+                sIndex += 3;
+                if (scratch322[sIndex] == 0x00) {
+                    sIndex++;
+                }
+                // if s > N/2
+            } while (MathMod256.ucmp(scratch322, sIndex, Secp256k1.SECP256K1_Rdiv2, (short) 0,
+                    (short) Secp256k1.SECP256K1_Rdiv2.length) > 0);
+
+            Util.arrayCopyNonAtomic(scratch322, (short) (offset + 64), signedTx, (short) (signedTxIndex + 1),
+                    signatureLen);
+
+            signedTx[signedTxIndex] = (byte) (signatureLen + 1);// sig len + 1
+            signedTxIndex += signatureLen + 1;
+            signedTx[signedTxIndex++] = 0x01;// hash type
+            short pubKeyLen = bip.ec256PrivateKeyToPublicKey(scratch322, (short) (offset + 32), signedTx,
+                    (short) (signedTxIndex + 1), true);
+            signedTx[signedTxIndex++] = (byte) pubKeyLen;
+            signedTxIndex += pubKeyLen;
+            // x = 1B [sig len byte] + sigLen + 1B [hash type] + 1B [pubkey Len] + pubKeyLen
+            signedTx[scriptLenIndex] = (byte) (3 + signatureLen + pubKeyLen);
+            // 63 = 1B len + 32B hash + 4B UTXO + 26B script
+            signedTxIndex = Util.arrayCopyNonAtomic(inputSection, (short) (inputSectionOffsetInputX + 62), signedTx,
+                    signedTxIndex, (short) 4);// sequence
+        }
 
         if ((short) (signedTxIndex + outputSectionLength + 4) >= footerIndex) {
             ISOException.throwIt(SW_FILE_FULL);

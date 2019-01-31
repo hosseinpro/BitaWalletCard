@@ -23,6 +23,9 @@ var rl = readline.createInterface({
   completer: completer
 });
 
+let spend;
+let fee;
+
 var recursiveAsyncReadLine = function() {
   rl.question("> ", function(answer) {
     const inputs = answer.split(" ");
@@ -37,25 +40,26 @@ var recursiveAsyncReadLine = function() {
               .importMasterSeedPlain(
                 "4c445bc98dc8cb9c6815fae9f7786581fed6731cd9054e0a261cdf0ef4e8e1e32aed630b7293382b5f281c729441448af131b70505363bc9a5e025f553bb36e0"
               )
-              .then(() => bitaWalletCard.getAddressList("6D2C0000000000", "1"))
+              .then(() => bitaWalletCard.getAddressList("6D2C0100000000", "1"))
               .then(res => {
                 addressInfo = res.addressInfo;
                 addressInfo[0].txs = [];
                 let tx = {};
                 tx.txHash =
-                  "a896270a198aa2146cdec81d18bc1fd358d4355f8d21be8e5335fae22c09244e";
-                tx.utxo = "0";
-                tx.value = "100000";
+                  "0d6c8759f965aa67cf45c82c9891a491f36593aca475a76df17d239be0dcc26d";
+                tx.utxo = "1";
+                tx.value = "29998500";
                 addressInfo[0].txs[0] = Object.assign({}, tx);
-              })
-              .then(() => {
-                const spend = 5000;
-                const fee = 500;
-                bitaWalletCard.requestSignTx(
-                  spend,
-                  fee,
-                  "1LwhKD4cJUqE2ZqvEkAEmpUuUNb9TDve4B"
-                );
+
+                // let tx1 = {};
+                // tx1.txHash =
+                //   "0d6c8759f965aa67cf45c82c9891a491f36593aca475a76df17d239be0dcc26d";
+                // tx1.utxo = "0";
+                // tx1.value = "110000000";
+                // addressInfo[0].txs[1] = Object.assign({}, tx1);
+
+                spend = 6000;
+                fee = 500;
                 inputSection = BitaWalletCard.buildInputSection(
                   spend,
                   fee,
@@ -63,14 +67,23 @@ var recursiveAsyncReadLine = function() {
                 );
               })
               .then(() =>
+                bitaWalletCard.requestSignTx(
+                  spend,
+                  fee,
+                  "mvyQZq6UvkMB97K9bUeHp4VVS1N7SeDzRX"
+                )
+              )
+              .then(() =>
+                // () => console.log(inputSection.inputSection)
                 bitaWalletCard.signTx(
                   "1234",
                   inputSection.fund,
-                  "6D2C0100010000",
+                  "6D2C0100000000",
                   inputSection.inputSection,
                   inputSection.signerKeyPaths
                 )
               )
+              .then(res => console.log(res.signedTx))
           );
         break;
       case "boot":
