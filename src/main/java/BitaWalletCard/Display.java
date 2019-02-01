@@ -1,7 +1,7 @@
 package BitaWalletCard;
 
 import javacard.framework.*;
-//import com.es.specialmethod.ESUtil;
+import com.es.specialmethod.ESUtil;
 
 public class Display {
 
@@ -14,15 +14,16 @@ public class Display {
 	private static final byte[] BTCTestNet = new byte[] { (byte) 'B', (byte) 'T', (byte) 'T' };
 	private static final byte[] BTCMainNet = new byte[] { (byte) 'B', (byte) 'T', (byte) 'C' };
 
-	// private static ESUtil esUtil = null;
+	private static ESUtil esUtil = null;
 
 	public Display() {
-		// esUtil = new ESUtil();
-		clearScreen();
+		esUtil = new ESUtil();
+		// clearScreen();
 	}
 
 	public boolean clearScreen() {
-		return true;// esUtil.clearScreen();
+		// return true;
+		return esUtil.clearScreen();
 	}
 
 	public boolean displayText(byte[] inBuff, short inOffset, short inLength, byte[] scratch, short scratchOffset) {
@@ -58,7 +59,8 @@ public class Display {
 		// wordBegin = (short)(wordEnd + 2);
 		// }
 
-		return true;// esUtil.displayText(scratch, scratchOffset, (short) (inLength + offset));
+		// return true;
+		return esUtil.displayText(scratch, scratchOffset, (short) (inLength + offset));
 	}
 
 	public boolean displayMessage(byte[] message, short messageLength, byte[] scratch, short scratchOffset) {
@@ -107,7 +109,8 @@ public class Display {
 			}
 		}
 
-		return true;// esUtil.displayText(scratch, scratchOffset, (short) (displayBufferSize + 8));
+		// return true;
+		return esUtil.displayText(scratch, scratchOffset, (short) (displayBufferSize + 8));
 	}
 
 	public boolean displayWelcome(byte[] version, byte[] label, short labelLength, byte[] scratch) {

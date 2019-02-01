@@ -199,8 +199,8 @@ module.exports = class BitaWalletCard {
   ////Begin of card functions
 
   selectApplet() {
-    const apduSelectApplect = "00 A4 04 00 06 FFBC00000001";
-    return this.transmit(apduSelectApplect, responseAPDU => {
+    const apduSelectApplet = "00 A4 04 00 06 FFBC00000001";
+    return this.transmit(apduSelectApplet, responseAPDU => {
       return { result: true };
     });
   }
