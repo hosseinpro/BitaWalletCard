@@ -115,7 +115,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
     public void process(APDU apdu) {
         if (selectingApplet()) {
-            display.screenWelcome(scratch515, (short) 0);
+            display.welcomeScreen(scratch515, (short) 0);
             return;
         }
 
@@ -227,6 +227,45 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     }
 
     private void test(APDU apdu) {
+
+        apdu.setIncomingAndReceive();
+        byte[] buf = apdu.getBuffer();
+        short lc = apdu.getIncomingLength();
+
+        short offset = (short) 8;
+        // byte[] testAddress = { 'm', 'v', 'y', 'Q', 'Z', 'q', '6', 'U', 'v', 'k', 'M',
+        // 'B', '9', '7', 'K', '9', 'b', 'U',
+        // 'e', 'H', 'p', '4', 'V', 'V', 'S', '1', 'N', '7', 'S', 'e', 'D', 'z', 'R',
+        // 'X' };
+        // offset = Util.arrayCopyNonAtomic(testAddress, (short) 0, scratch515, offset,
+        // (short) testAddress.length);
+
+        short length = buf[OFFSET_CDATA];
+        for (short i = 0; i < length; i++) {
+            scratch515[offset++] = (byte) ((byte) (i % 10) + 0x30);
+        }
+
+        display.displayText(scratch515, (short) 0, offset);
+
+        // byte[] a = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x70 };
+        // byte[] c = new byte[100];
+        // short len = toDecimalString(a, (short) 0, (short) a.length, c, (short) 0);
+        // byte[] btc = new byte[100];
+        // short btcLen = satoshiToBtc(c, (short) 0, btc, (short) 0);
+
+        // apdu.setOutgoing();
+        // apdu.setOutgoingLength(btcLen);
+        // apdu.sendBytesLong(btc, (short) 0, btcLen);
+
+        // byte[] a = { 0x12, 0x34, 0x56, 0x78, (byte) 0x90, (byte) 0xAB, (byte) 0xCD,
+        // (byte) 0xEF };
+        // byte[] c = new byte[100];
+        // short len = toHexString(a, (short) 0, (short) a.length, c, (short) 0);
+
+        // apdu.setOutgoing();
+        // apdu.setOutgoingLength(len);
+        // apdu.sendBytesLong(c, (short) 0, len);
+
         // if (!display.clearScreen()) {
         // ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);
         // }
@@ -257,7 +296,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
         short yescodeLength = generateYesCode(main500, (short) 0);
 
-        display.screenWipe(main500, (short) 0, yescodeLength, scratch515, (short) 0);
+        display.wipeScreen(main500, (short) 0, yescodeLength, scratch515, (short) 0);
     }
 
     private void processWipe(APDU apdu) {
@@ -266,8 +305,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short offData = apdu.getOffsetCdata();
 
         if (!verifyYesCode(buf, offData)) {
-            display.screenFailed(scratch515, (short) 0);
-            display.screenWelcome(scratch515, (short) 0);
+            display.failedScreen(scratch515, (short) 0);
+            display.welcomeScreen(scratch515, (short) 0);
             ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
         }
 
@@ -279,8 +318,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
         labelLength = Util.arrayCopyNonAtomic(defaultLabel, (short) 0, label, (short) 0, (short) defaultLabel.length);
 
-        display.screenSuccessful(scratch515, (short) 0);
-        display.screenWelcome(scratch515, (short) 0);
+        display.successfulScreen(scratch515, (short) 0);
+        display.welcomeScreen(scratch515, (short) 0);
     }
 
     private void processGetSerialNumber(APDU apdu) {
@@ -409,7 +448,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
         short kcvLength = generateKCV(commandBuffer80, (short) 0, (short) 65, main500, yescodeLength);
 
-        display.screenBackup2(main500, (short) 0, yescodeLength, main500, yescodeLength, kcvLength, scratch515,
+        display.backup2Screen(main500, (short) 0, yescodeLength, main500, yescodeLength, kcvLength, scratch515,
                 (short) 0);
     }
 
@@ -466,14 +505,20 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         byte[] buf = apdu.getBuffer();
         short offData = apdu.getOffsetCdata();
 
-        display.screenWelcome(scratch515, (short) 0);
-        verifyYesCode(buf, offData);
+        if (!verifyYesCode(buf, offData)) {
+            display.failedScreen(scratch515, (short) 0);
+            display.welcomeScreen(scratch515, (short) 0);
+            ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
+        }
 
         short packLen = createExportPacket(mseed, (short) 0, MSEED_SIZE, main500, (short) 0, scratch515, (short) 0);
 
         apdu.setOutgoing();
         apdu.setOutgoingLength(packLen);
         apdu.sendBytesLong(main500, (short) 0, packLen);
+
+        display.successfulScreen(scratch515, (short) 0);
+        display.welcomeScreen(scratch515, (short) 0);
     }
 
     private void processImportMasterSeed(APDU apdu) {
@@ -638,8 +683,11 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         byte[] buf = apdu.getBuffer();
         short offData = apdu.getOffsetCdata();
 
-        display.screenWelcome(scratch515, (short) 0);
-        verifyYesCode(buf, offData);
+        if (!verifyYesCode(buf, offData)) {
+            display.failedScreen(scratch515, (short) 0);
+            display.welcomeScreen(scratch515, (short) 0);
+            ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
+        }
 
         // commandBuffer80
         short spendIndex = 0; // 8B
@@ -702,6 +750,9 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short signedTxLength = signTransaction(buf, inputSectionIndex, buf, signerKeyPathsIndex, scratch515, (short) 0,
                 moffset, main500, (short) 0, scratch515, moffset);
 
+        display.successfulScreen(scratch515, (short) 0);
+        display.welcomeScreen(scratch515, (short) 0);
+
         sendLongResponse(apdu, (short) 0, signedTxLength);
     }
 
@@ -755,8 +806,11 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         byte[] buf = apdu.getBuffer();
         short offData = apdu.getOffsetCdata();
 
-        display.screenWelcome(scratch515, (short) 0);
-        verifyYesCode(buf, offData);
+        if (!verifyYesCode(buf, offData)) {
+            display.failedScreen(scratch515, (short) 0);
+            display.welcomeScreen(scratch515, (short) 0);
+            ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
+        }
 
         short subWalletNumber = Util.makeShort(commandBuffer80[70], commandBuffer80[71]);
 
@@ -769,6 +823,9 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         apdu.setOutgoing();
         apdu.setOutgoingLength(packLen);
         apdu.sendBytesLong(main500, (short) 0, packLen);
+
+        display.successfulScreen(scratch515, (short) 0);
+        display.welcomeScreen(scratch515, (short) 0);
     }
 
     private void processGenerateTransportKey(APDU apdu) {
@@ -786,7 +843,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
         short kcvLen = generateKCV(main500, (short) 0, publicKeyLength, main500, publicKeyLength);
 
-        display.screenBackup1(main500, publicKeyLength, kcvLen, scratch515, (short) 0);
+        display.backup1Screen(main500, publicKeyLength, kcvLen, scratch515, (short) 0);
 
         apdu.setOutgoing();
         apdu.setOutgoingLength(publicKeyLength);
@@ -954,7 +1011,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short feeIndex = 8; // 8B
         short destAddressIndex = 16; // 25B
 
-        display.screenSend(main500, (short) 0, yescodeLength, commandBuffer80, spendIndex, (short) 8, commandBuffer80,
+        display.sendScreen(main500, (short) 0, yescodeLength, commandBuffer80, spendIndex, (short) 8, commandBuffer80,
                 feeIndex, (short) 8, commandBuffer80, destAddressIndex, (short) 25, scratch515, (short) 0);
     }
 
@@ -964,8 +1021,11 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short offData = apdu.getOffsetCdata();
         short lc = apdu.getIncomingLength();
 
-        display.screenWelcome(scratch515, (short) 0);
-        verifyYesCode(buf, offData);
+        if (!verifyYesCode(buf, offData)) {
+            display.failedScreen(scratch515, (short) 0);
+            display.welcomeScreen(scratch515, (short) 0);
+            ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
+        }
 
         // commandBuffer80
         short spendIndex = 0; // 8B
@@ -1004,19 +1064,49 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short signedTxLength = signTransaction(buf, inputSectionIndex, buf, signerKeyPathsIndex, scratch515, (short) 0,
                 moffset, main500, (short) 0, scratch515, moffset);
 
+        display.successfulScreen(scratch515, (short) 0);
+        display.welcomeScreen(scratch515, (short) 0);
+
         sendLongResponse(apdu, (short) 0, signedTxLength);
+    }
+
+    private short toHexString(byte[] input, short inputOffset, short inputLength, byte[] outputHex,
+            short outputHexOffset) {
+        byte b = 0;
+        for (short i = 0; i < inputLength; i++) {
+            b = (byte) ((input[(short) (inputOffset + i)] & 0xF0) >> 4);
+            if ((b >= 0) && (b <= 9)) {
+                b = (byte) (b + 0x30);
+            } else {
+                b = (byte) (b + 0x37);
+            }
+            outputHex[(short) (outputHexOffset + (i * 2))] = b;
+
+            b = (byte) (input[(short) (inputOffset + i)] & 0x0F);
+            if ((b >= 0) && (b <= 9)) {
+                b = (byte) (b + 0x30);
+            } else {
+                b = (byte) (b + 0x37);
+            }
+            outputHex[(short) (outputHexOffset + (i * 2 + 1))] = b;
+        }
+        return (short) (inputLength * 2);
     }
 
     private short generateKCV(byte[] inBubber, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
         sha256.reset();
         short sha256Len = sha256.doFinal(inBubber, inOffset, inLength, scratch515, (short) 0);
 
-        Ripemd160.hash32(scratch515, (short) 0, scratch515, sha256Len, scratch515, (short) 60);
-        short ripemd160Len = (short) 20;
+        return toHexString(scratch515, (short) 0, (short) 4, outBuffer, outOffset);
 
-        short b58Len = Base58.encode(scratch515, sha256Len, ripemd160Len, outBuffer, outOffset, scratch515, (short) 60);
+        // Ripemd160.hash32(scratch515, (short) 0, scratch515, sha256Len, scratch515,
+        // (short) 60);
+        // short ripemd160Len = (short) 20;
 
-        return b58Len;
+        // short b58Len = Base58.encode(scratch515, sha256Len, ripemd160Len, outBuffer,
+        // outOffset, scratch515, (short) 60);
+
+        // return b58Len;
     }
 
     private void sendLongResponse(APDU apdu, short responseOffset1, short responseLength1) {
