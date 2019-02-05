@@ -2,148 +2,258 @@ package BitaWalletCard;
 
 import javacard.framework.*;
 import com.es.specialmethod.ESUtil;
+// import com.es.specialmethod.ESComm;
+// import com.es.specialmethod.method;
 
 public class Display {
 
-	public static final byte NEWLINE = (byte) 0x0A;
-	private static final short DISPLAY_COL = 16;
-	private static final short DISPLAY_ROW = 8;
+	private static final byte NEWLINE = (byte) 0x0A;
+	private static final short HEADER_SIZE = 8;
 
-	private static final byte[] BlackCard = new byte[] { (byte) 'B', (byte) 'l', (byte) 'a', (byte) 'c', (byte) 'k',
-			(byte) 'C', (byte) 'a', (byte) 'r', (byte) 'd' };
-	private static final byte[] BTCTestNet = new byte[] { (byte) 'B', (byte) 'T', (byte) 'T' };
-	private static final byte[] BTCMainNet = new byte[] { (byte) 'B', (byte) 'T', (byte) 'C' };
+	private static final short MAX_IMG_DATA_EACH_PKT = (short) 240;
+
+	private static final byte MSG_WELCOME[] = { ' ', ' ', ' ', 'B', 'i', 't', 'a', 'W', 'a', 'l', 'l', 'e', 't' };
+	private static final byte MSG_SUCCESSFUL[] = { ' ', ' ', ' ', 'S', 'u', 'c', 'c', 'e', 's', 's', 'f', 'u', 'l' };
+	private static final byte MSG_FAILED[] = { ' ', ' ', ' ', ' ', ' ', 'F', 'a', 'i', 'l', 'e', 'd' };
+	private static final byte MSG_YESCODE[] = { 'Y', 'E', 'S', ':' };
+	private static final byte MSG_WIPE[] = { ' ', ' ', ' ', ' ', ' ', 'W', 'i', 'p', 'e', '?' };
+	private static final byte MSG_BACKUP[] = { 'B', 'a', 'c', 'k', 'u', 'p', '?' };
+	private static final byte MSG_BACKUPKEY[] = { ' ', ' ', ' ', 'b', 'a', 'c', 'k', 'u', 'p', ' ', 'k', 'e', 'y' };
+	private static final byte MSG_VCODE_DATA[] = { ' ', ' ', ' ', ' ', '[', ' ', ' ', ' ', ' ', ' ', ' ', ']' };
+	private static final byte MSG_VCODE_DATA_INDEX = (byte) 6;
+	private static final byte MSG_SEND[] = { 'S', 'e', 'n', 'd', '?' };
+	private static final byte MSG_AMOUNT[] = { 'A', 'm', 'o', 'u', 'n', 't', ':' };
+	private static final byte MSG_FEE[] = { 'F', 'e', 'e', ':' };
+	private static final byte MSG_TO[] = { 'T', 'o', ':' };
 
 	private static ESUtil esUtil = null;
+	// public method esMethod;
+	// public static ESComm esComm;
 
 	public Display() {
 		esUtil = new ESUtil();
-		// clearScreen();
+		// esComm = new ESComm();
+		// esMethod = new method();
+		// esMethod.CommBuff = JCSystem.makeTransientByteArray((short) 300,
+		// JCSystem.CLEAR_ON_DESELECT);
 	}
 
-	public boolean clearScreen() {
-		// return true;
-		return esUtil.clearScreen();
+	public boolean screenWelcome(byte[] scratch, short scratchOffset) {
+		short offset = (short) (scratchOffset + HEADER_SIZE);
+
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_WELCOME, (short) 0, scratch, offset, (short) MSG_WELCOME.length);
+
+		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
-	public boolean displayText(byte[] inBuff, short inOffset, short inLength, byte[] scratch, short scratchOffset) {
-		if (clearScreen() == false) {
+	public boolean screenSuccessful(byte[] scratch, short scratchOffset) {
+		short offset = (short) (scratchOffset + HEADER_SIZE);
+
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_SUCCESSFUL, (short) 0, scratch, offset, (short) MSG_SUCCESSFUL.length);
+
+		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
+	}
+
+	public boolean screenFailed(byte[] scratch, short scratchOffset) {
+		short offset = (short) (scratchOffset + HEADER_SIZE);
+
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_FAILED, (short) 0, scratch, offset, (short) MSG_FAILED.length);
+
+		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
+	}
+
+	public boolean screenWipe(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] scratch,
+			short scratchOffset) {
+		short offset = (short) (scratchOffset + HEADER_SIZE);
+
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_WIPE, (short) 0, scratch, offset, (short) MSG_WIPE.length);
+
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_YESCODE, (short) 0, scratch, offset, (short) MSG_YESCODE.length);
+
+		offset = Util.arrayCopyNonAtomic(yescode, yescodeOffset, scratch, offset, yescodeLength);
+
+		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
+	}
+
+	public boolean screenBackup1(byte[] kcv, short kcvOffset, short kcvLength, byte[] scratch, short scratchOffset) {
+		short offset = (short) (scratchOffset + HEADER_SIZE);
+
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_BACKUPKEY, (short) 0, scratch, offset, (short) MSG_BACKUPKEY.length);
+		scratch[offset++] = NEWLINE;
+
+		Util.arrayCopyNonAtomic(MSG_VCODE_DATA, (short) 0, scratch, offset, (short) MSG_VCODE_DATA.length);
+
+		offset += MSG_VCODE_DATA_INDEX;
+
+		short vcodeOffset = (short) (kcvOffset + kcvLength - 4);
+
+		offset = Util.arrayCopyNonAtomic(kcv, vcodeOffset, scratch, offset, (short) 4);
+		offset += 2;
+
+		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
+	}
+
+	public boolean screenBackup2(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] kcv, short kcvOffset,
+			short kcvLength, byte[] scratch, short scratchOffset) {
+		short offset = (short) (scratchOffset + HEADER_SIZE);
+
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_BACKUPKEY, (short) 0, scratch, offset, (short) MSG_BACKUPKEY.length);
+		scratch[offset++] = NEWLINE;
+
+		Util.arrayCopyNonAtomic(MSG_VCODE_DATA, (short) 0, scratch, offset, (short) MSG_VCODE_DATA.length);
+
+		offset += MSG_VCODE_DATA_INDEX;
+
+		short vcodeOffset = (short) (kcvOffset + kcvLength - 4);
+
+		offset = Util.arrayCopyNonAtomic(kcv, vcodeOffset, scratch, offset, (short) 4);
+		offset += 2;
+
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_BACKUP, (short) 0, scratch, offset, (short) MSG_BACKUP.length);
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_YESCODE, (short) 0, scratch, offset, (short) MSG_YESCODE.length);
+
+		offset = Util.arrayCopyNonAtomic(yescode, yescodeOffset, scratch, offset, yescodeLength);
+
+		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
+	}
+
+	public boolean screenSend(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] amount,
+			short amountOffset, short amountLength, byte[] fee, short feeOffset, short feeLength, byte[] destAddress,
+			short destAddressOffset, short destAddressLength, byte[] scratch, short scratchOffset) {
+		short offset = (short) (scratchOffset + HEADER_SIZE);
+
+		offset = Util.arrayCopyNonAtomic(MSG_SEND, (short) 0, scratch, offset, (short) MSG_SEND.length);
+
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_AMOUNT, (short) 0, scratch, offset, (short) MSG_AMOUNT.length);
+
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_FEE, (short) 0, scratch, offset, (short) MSG_FEE.length);
+
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_TO, (short) 0, scratch, offset, (short) MSG_TO.length);
+
+		scratch[offset++] = NEWLINE;
+
+		offset = Util.arrayCopyNonAtomic(MSG_YESCODE, (short) 0, scratch, offset, (short) MSG_YESCODE.length);
+
+		offset = Util.arrayCopyNonAtomic(yescode, yescodeOffset, scratch, offset, yescodeLength);
+
+		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
+	}
+
+	private boolean displayText(byte[] inBuff, short inOffset, short inLength) {
+
+		if (esUtil.clearScreen() == false) {
 			return false;
 		}
 
-		scratch[(short) (scratchOffset + 0)] = (byte) 0; // Reserved
-		scratch[(short) (scratchOffset + 1)] = (byte) 0; // Coding: 00:UFT-8
-		scratch[(short) (scratchOffset + 2)] = (byte) 0;
-		scratch[(short) (scratchOffset + 3)] = (byte) 0; // Start column pixel
-		scratch[(short) (scratchOffset + 4)] = (byte) 0;
-		scratch[(short) (scratchOffset + 5)] = (byte) 0; // Start row pixel
-		scratch[(short) (scratchOffset + 6)] = (byte) ((inLength & (short) 0xFF00) >> 8);
-		scratch[(short) (scratchOffset + 7)] = (byte) (inLength & (short) 0x00FF); // Text length
-		Util.arrayCopyNonAtomic(inBuff, inOffset, scratch, (short) (scratchOffset + 8), inLength);
+		short dataLength = (short) (inLength - 8);
 
-		short offset = (short) 8;
+		short offset = inOffset;
 
-		// word wrapping
-		// short wordBegin = offset;
-		// short wordEnd = (short)0;
-		// while(wordBegin <= (short)(inLength + offset)){
-		// short i = wordBegin;
-		// while((scratch[(short)(scratchOffset + i)] != (byte)0x20) && (i <
-		// (short)(inLength + offset))){
-		// i++;}
-		// wordEnd = (short)(i - 1);
-		// if(((short)(wordEnd - wordBegin) < DISPLAY_COL) &&
-		// ((short)((short)(wordBegin - offset) / DISPLAY_COL) !=
-		// (short)((short)(wordEnd - offset) / DISPLAY_COL))){
-		// scratch[(short)(scratchOffset + (short)(wordBegin - 1))] = NEWLINE;}
-		// wordBegin = (short)(wordEnd + 2);
-		// }
+		inBuff[offset++] = (byte) 0; // Reserved
+		inBuff[offset++] = (byte) 0; // Coding: 00:UFT-8
+		inBuff[offset++] = (byte) 0;
+		inBuff[offset++] = (byte) 0; // Start column pixel
+		inBuff[offset++] = (byte) 0;
+		inBuff[offset++] = (byte) 0; // Start row pixel
+		inBuff[offset++] = (byte) ((dataLength & (short) 0xFF00) >> 8);
+		inBuff[offset++] = (byte) (dataLength & (short) 0x00FF); // Text length
 
-		// return true;
-		return esUtil.displayText(scratch, scratchOffset, (short) (inLength + offset));
+		return esUtil.displayText(inBuff, inOffset, inLength);
 	}
 
-	public boolean displayMessage(byte[] message, short messageLength, byte[] scratch, short scratchOffset) {
-		// scratch must be min 136 =
-		// 16 * 8 : char * line
-		// + 8 : header
-		short displayBufferSize = 136;
+	private void displayImage(byte[] inBuff, short inOffset, short inLength, byte[] scratch300, short scratchOffset) {
 
-		if (clearScreen() == false) {
-			return false;
-		}
+		// esMethod = new method();
+		// esMethod.CommBuff = JCSystem.makeTransientByteArray((short) 300,
+		// JCSystem.CLEAR_ON_DESELECT);
 
-		scratch[(short) (scratchOffset + 0)] = (byte) 0; // Reserved
-		scratch[(short) (scratchOffset + 1)] = (byte) 0; // Coding: 00:UFT-8
-		scratch[(short) (scratchOffset + 2)] = (byte) 0;
-		scratch[(short) (scratchOffset + 3)] = (byte) 0; // Start column pixel
-		scratch[(short) (scratchOffset + 4)] = (byte) 0;
-		scratch[(short) (scratchOffset + 5)] = (byte) 0; // Start row pixel
-		scratch[(short) (scratchOffset + 6)] = (byte) ((displayBufferSize & (short) 0xFF00) >> 8);
-		scratch[(short) (scratchOffset + 7)] = (byte) (displayBufferSize & (short) 0x00FF); // Text length
+		byte result;
+		short ImgDataReadIndex, ImgCntCurrPkt, ImgCntLeft, PktPayloadSize;
+		byte[] resp = new byte[20];
+		byte LastPkt;
 
-		short offset = (short) (scratchOffset + 8);
-		Util.arrayFillNonAtomic(scratch, offset, displayBufferSize, (byte) ' ');
+		ImgCntLeft = (short) (inLength - 10);
+		ImgDataReadIndex = (short) (inOffset + 10);
 
-		short lineCount = 1;
-		for (short i = 0; i < messageLength; i++) {
-			if (message[i] == NEWLINE) {
-				lineCount++;
+		while (true) {
+			LastPkt = (ImgCntLeft <= MAX_IMG_DATA_EACH_PKT) ? (byte) 1 : (byte) 0;
+			ImgCntCurrPkt = (LastPkt == (byte) 1) ? ImgCntLeft : MAX_IMG_DATA_EACH_PKT;
+
+			if (ImgDataReadIndex == (short) (inOffset + 10)) // first packet
+			{
+				scratch300[scratchOffset] = 0x21;
+				scratch300[(short) (scratchOffset + 1)] = 0x02;
+				scratch300[(short) (scratchOffset + 2)] = (byte) ((LastPkt << 1) | 1); // link type (last packet | first
+																						// packet)
+
+				PktPayloadSize = (short) (ImgCntCurrPkt + 13);
+				Util.arrayCopyNonAtomic(inBuff, inOffset, scratch300, (short) (scratchOffset + 3),
+						(short) (ImgCntCurrPkt + 10));
+			} else {
+				scratch300[scratchOffset] = 0x21;
+				scratch300[(short) (scratchOffset + 1)] = 0x02;
+				scratch300[(short) (scratchOffset + 2)] = (byte) ((LastPkt << 1) | 0); // link type
+				PktPayloadSize = (short) (ImgCntCurrPkt + 3);
+				Util.arrayCopyNonAtomic(inBuff, ImgDataReadIndex, scratch300, (short) (scratchOffset + 3),
+						ImgCntCurrPkt);
+			}
+
+			// result = esComm.sendAndReceiveData(PktBuf, (short) 0, PktPayloadSize, (short)
+			// 0xFFFF, resp, (short) 0,
+			// (short) 0xFFFF);
+
+			// result = esMethod.tcSendAndRecv(scratch300, scratchOffset, PktPayloadSize,
+			// resp, (short) 0);
+			// if (result != 0x00 && resp[0] != 0x00 && resp[1] != 0x02) {
+			// continue;
+			// }
+
+			ImgCntLeft -= ImgCntCurrPkt;
+			ImgDataReadIndex += ImgCntCurrPkt;
+
+			if (ImgCntLeft == 0) // get response for DisplayImage cmd
+			{
+				break;
 			}
 		}
-		short currentLine = (short) ((short) (DISPLAY_ROW / 2) - (short) (lineCount / 2));
-
-		short textBegin = 0;
-		short textEnd = 0;
-
-		for (short j = textBegin; j <= messageLength; j++) {
-			if ((message[j] == NEWLINE) || (j == messageLength)) {
-				textEnd = (short) (j - 1);
-				short textLength = (short) ((short) (textEnd - textBegin) + 1);
-				short index = offset;
-				index += (short) ((short) (currentLine - 1) * DISPLAY_COL);
-				index += (short) ((short) (DISPLAY_COL / 2) - (short) (textLength / 2));
-				Util.arrayCopyNonAtomic(message, textBegin, scratch, index, textLength);
-				currentLine++;
-				textBegin = (short) (j + 1);
-			}
-		}
-
-		// return true;
-		return esUtil.displayText(scratch, scratchOffset, (short) (displayBufferSize + 8));
-	}
-
-	public boolean displayWelcome(byte[] version, byte[] label, short labelLength, byte[] scratch) {
-		short offset = 0;
-		Util.arrayCopyNonAtomic(BlackCard, (short) 0, scratch, offset, (short) BlackCard.length);
-		offset += BlackCard.length;
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = (byte) 'v';
-		Util.arrayCopyNonAtomic(version, (short) 0, scratch, offset, (short) version.length);
-		offset += (short) version.length;
-		scratch[offset++] = NEWLINE;
-		Util.arrayCopyNonAtomic(label, (short) 0, scratch, offset, labelLength);
-		offset += labelLength;
-
-		return displayMessage(scratch, offset, scratch, offset);
-	}
-
-	public boolean displayAddress(short coin, byte[] address, short addressOffset, short addressLength,
-			byte[] scratch) {
-		switch (coin) {
-		case BIP.TST:
-			Util.arrayCopyNonAtomic(BTCTestNet, (short) 0, scratch, (short) 0, (short) 3);
-			break;
-		case BIP.BTC:
-			Util.arrayCopyNonAtomic(BTCMainNet, (short) 0, scratch, (short) 0, (short) 3);
-			break;
-		default:
-			return false;
-		}
-		scratch[3] = (byte) ':';
-		scratch[4] = NEWLINE;
-		Util.arrayCopyNonAtomic(address, addressOffset, scratch, (short) 5, addressLength);
-
-		return displayText(scratch, (short) 0, (short) (5 + addressLength), scratch, (short) 50);
 	}
 }

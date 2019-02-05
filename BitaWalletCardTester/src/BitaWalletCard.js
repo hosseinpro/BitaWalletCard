@@ -316,26 +316,6 @@ module.exports = class BitaWalletCard {
     });
   }
 
-  requestRemoveMasterSeed() {
-    //ISO/IEC 7816-8 2004 Section 5.1
-    //P1=C4: key remove with no output (non-standard)
-    //P2=01: reference to master seed
-    const apduRequestRemoveMS = "00 E1 BC 03";
-    return this.transmit(apduRequestRemoveMS, responseAPDU => {
-      return { result: true };
-    });
-  }
-
-  removeMasterSeed(yesCode) {
-    //ISO/IEC 7816-8 2004 Section 5.1
-    //P1=C4: key remove with no output (non-standard)
-    //P2=01: reference to master seed
-    const apduRemoveMS = "00 E2 BC 03 04" + BitaWalletCard.ascii2hex(yesCode);
-    return this.transmit(apduRemoveMS, responseAPDU => {
-      return { result: true };
-    });
-  }
-
   requestExportMasterSeed() {
     //ISO/IEC 7816-8 2004 Section 5.2 and 5.9
     //P1=86: plain value encryption

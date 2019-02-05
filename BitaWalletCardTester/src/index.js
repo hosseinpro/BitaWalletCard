@@ -32,59 +32,59 @@ var recursiveAsyncReadLine = function() {
     switch (inputs[0]) {
       case "test":
         console.log("command apdu chaining test:");
-        bitaWalletCard
-          .requestRemoveMasterSeed()
-          .then(() => bitaWalletCard.removeMasterSeed("1234"))
-          .then(() =>
-            bitaWalletCard
-              .importMasterSeedPlain(
-                "4c445bc98dc8cb9c6815fae9f7786581fed6731cd9054e0a261cdf0ef4e8e1e32aed630b7293382b5f281c729441448af131b70505363bc9a5e025f553bb36e0"
-              )
-              .then(() => bitaWalletCard.getAddressList("6D2C0100000000", "1"))
-              .then(res => {
-                addressInfo = res.addressInfo;
-                addressInfo[0].txs = [];
-                let tx = {};
-                tx.txHash =
-                  "0d6c8759f965aa67cf45c82c9891a491f36593aca475a76df17d239be0dcc26d";
-                tx.utxo = "1";
-                tx.value = "29998500";
-                addressInfo[0].txs[0] = Object.assign({}, tx);
+        // bitaWalletCard
+        //   .requestRemoveMasterSeed()
+        //   .then(() => bitaWalletCard.removeMasterSeed("1234"))
+        //   .then(() =>
+        //     bitaWalletCard
+        //       .importMasterSeedPlain(
+        //         "4c445bc98dc8cb9c6815fae9f7786581fed6731cd9054e0a261cdf0ef4e8e1e32aed630b7293382b5f281c729441448af131b70505363bc9a5e025f553bb36e0"
+        //       )
+        //       .then(() => bitaWalletCard.getAddressList("6D2C0100000000", "1"))
+        //       .then(res => {
+        //         addressInfo = res.addressInfo;
+        //         addressInfo[0].txs = [];
+        //         let tx = {};
+        //         tx.txHash =
+        //           "0d6c8759f965aa67cf45c82c9891a491f36593aca475a76df17d239be0dcc26d";
+        //         tx.utxo = "1";
+        //         tx.value = "29998500";
+        //         addressInfo[0].txs[0] = Object.assign({}, tx);
 
-                // let tx1 = {};
-                // tx1.txHash =
-                //   "0d6c8759f965aa67cf45c82c9891a491f36593aca475a76df17d239be0dcc26d";
-                // tx1.utxo = "0";
-                // tx1.value = "110000000";
-                // addressInfo[0].txs[1] = Object.assign({}, tx1);
+        //         // let tx1 = {};
+        //         // tx1.txHash =
+        //         //   "0d6c8759f965aa67cf45c82c9891a491f36593aca475a76df17d239be0dcc26d";
+        //         // tx1.utxo = "0";
+        //         // tx1.value = "110000000";
+        //         // addressInfo[0].txs[1] = Object.assign({}, tx1);
 
-                spend = 6000;
-                fee = 500;
-                inputSection = BitaWalletCard.buildInputSection(
-                  spend,
-                  fee,
-                  addressInfo
-                );
-              })
-              .then(() =>
-                bitaWalletCard.requestSignTx(
-                  spend,
-                  fee,
-                  "mvyQZq6UvkMB97K9bUeHp4VVS1N7SeDzRX"
-                )
-              )
-              .then(() =>
-                // () => console.log(inputSection.inputSection)
-                bitaWalletCard.signTx(
-                  "1234",
-                  inputSection.fund,
-                  "6D2C0100000000",
-                  inputSection.inputSection,
-                  inputSection.signerKeyPaths
-                )
-              )
-              .then(res => console.log(res.signedTx))
-          );
+        //         spend = 6000;
+        //         fee = 500;
+        //         inputSection = BitaWalletCard.buildInputSection(
+        //           spend,
+        //           fee,
+        //           addressInfo
+        //         );
+        //       })
+        //       .then(() =>
+        //         bitaWalletCard.requestSignTx(
+        //           spend,
+        //           fee,
+        //           "mvyQZq6UvkMB97K9bUeHp4VVS1N7SeDzRX"
+        //         )
+        //       )
+        //       .then(() =>
+        //         // () => console.log(inputSection.inputSection)
+        //         bitaWalletCard.signTx(
+        //           "1234",
+        //           inputSection.fund,
+        //           "6D2C0100000000",
+        //           inputSection.inputSection,
+        //           inputSection.signerKeyPaths
+        //         )
+        //       )
+        //       .then(res => console.log(res.signedTx))
+        //   );
         break;
       case "boot":
         cardreaderList = listReaders();
@@ -165,16 +165,6 @@ var recursiveAsyncReadLine = function() {
         break;
       case "generatemasterseed":
         bitaWalletCard.generateMasterSeed().catch(err => {
-          print(err);
-        });
-        break;
-      case "requestremovemasterSeed":
-        bitaWalletCard.requestRemoveMasterSeed().catch(err => {
-          print(err);
-        });
-        break;
-      case "removemasterseed": //yesCode
-        bitaWalletCard.removeMasterSeed(inputs[1]).catch(err => {
           print(err);
         });
         break;
@@ -355,7 +345,7 @@ function print(message) {
 }
 
 function completer(line) {
-  const completions = "test boot listreaders connect disconnect transmit selectapplet requestwipe wipe verifypin changepin getlabel setlabel importmasterseedplain generatemasterseed requestremovemasterSeed removemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
+  const completions = "test boot listreaders connect disconnect transmit selectapplet requestwipe wipe verifypin changepin getlabel setlabel importmasterseedplain generatemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
     " "
   );
   const hits = completions.filter(c => c.startsWith(line));
