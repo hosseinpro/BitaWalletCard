@@ -7,13 +7,15 @@ import com.es.specialmethod.ESUtil;
 
 public class Display {
 
+	private boolean isHomeScreen = false;
+
 	private static final byte NEWLINE = (byte) 0x0A;
 	private static final byte SPACE = (byte) ' ';
 	private static final short HEADER_SIZE = 8;
 
 	private static final short MAX_IMG_DATA_EACH_PKT = (short) 240;
 
-	private static final byte MSG_WELCOME[] = { ' ', ' ', ' ', 'B', 'i', 't', 'a', 'W', 'a', 'l', 'l', 'e', 't' };
+	private static final byte MSG_HOME[] = { ' ', ' ', ' ', 'B', 'i', 't', 'a', 'W', 'a', 'l', 'l', 'e', 't' };
 	private static final byte MSG_SUCCESSFUL[] = { ' ', ' ', ' ', 'S', 'u', 'c', 'c', 'e', 's', 's', 'f', 'u', 'l' };
 	private static final byte MSG_FAILED[] = { ' ', ' ', ' ', ' ', ' ', 'F', 'a', 'i', 'l', 'e', 'd' };
 	private static final byte MSG_WIPE[] = { ' ', ' ', ' ', ' ', 'S', 'u', 'r', 'e', ' ', 't', 'o', NEWLINE, ' ', ' ',
@@ -42,19 +44,26 @@ public class Display {
 		// JCSystem.CLEAR_ON_DESELECT);
 	}
 
-	public boolean welcomeScreen(byte[] scratch, short scratchOffset) {
+	public boolean homeScreen(byte[] scratch, short scratchOffset) {
+		if (isHomeScreen) {
+			return true;
+		}
+		isHomeScreen = true;
+
 		short offset = (short) (scratchOffset + HEADER_SIZE);
 
 		scratch[offset++] = NEWLINE;
 		scratch[offset++] = NEWLINE;
 		scratch[offset++] = NEWLINE;
 
-		offset = Util.arrayCopyNonAtomic(MSG_WELCOME, (short) 0, scratch, offset, (short) MSG_WELCOME.length);
+		offset = Util.arrayCopyNonAtomic(MSG_HOME, (short) 0, scratch, offset, (short) MSG_HOME.length);
 
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
 	public boolean successfulScreen(byte[] scratch, short scratchOffset) {
+		isHomeScreen = false;
+
 		short offset = (short) (scratchOffset + HEADER_SIZE);
 
 		scratch[offset++] = NEWLINE;
@@ -67,6 +76,8 @@ public class Display {
 	}
 
 	public boolean failedScreen(byte[] scratch, short scratchOffset) {
+		isHomeScreen = false;
+
 		short offset = (short) (scratchOffset + HEADER_SIZE);
 
 		scratch[offset++] = NEWLINE;
@@ -80,6 +91,8 @@ public class Display {
 
 	public boolean wipeScreen(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] scratch,
 			short scratchOffset) {
+		isHomeScreen = false;
+
 		short offset = (short) (scratchOffset + HEADER_SIZE);
 
 		scratch[offset++] = NEWLINE;
@@ -100,6 +113,8 @@ public class Display {
 	}
 
 	public boolean backup1Screen(byte[] kcv, short kcvOffset, short kcvLength, byte[] scratch, short scratchOffset) {
+		isHomeScreen = false;
+
 		short offset = (short) (scratchOffset + HEADER_SIZE);
 
 		scratch[offset++] = NEWLINE;
@@ -120,6 +135,8 @@ public class Display {
 
 	public boolean backup2Screen(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] kcv, short kcvOffset,
 			short kcvLength, byte[] scratch, short scratchOffset) {
+		isHomeScreen = false;
+
 		short offset = (short) (scratchOffset + HEADER_SIZE);
 
 		scratch[offset++] = NEWLINE;
@@ -148,6 +165,8 @@ public class Display {
 	public boolean sendScreen(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] amount,
 			short amountOffset, short amountLength, byte[] fee, short feeOffset, short feeLength, byte[] destAddress,
 			short destAddressOffset, short destAddressLength, byte[] scratch, short scratchOffset) {
+		isHomeScreen = false;
+
 		short offset = (short) (scratchOffset + HEADER_SIZE);
 
 		toDecimalString(amount, amountOffset, amountLength, scratch, (short) (offset + 10));// temp use of scratch
@@ -244,7 +263,7 @@ public class Display {
 		return length;
 	}
 
-	public boolean displayText(byte[] inBuff, short inOffset, short inLength) {
+	private boolean displayText(byte[] inBuff, short inOffset, short inLength) {
 
 		esUtil.clearScreen();
 
