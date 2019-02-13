@@ -60,8 +60,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     private short responseRemainingLength;
     private short responseOffset;
 
-    private static Display display;
-    private static BIP bip;
+    private Display display;
+    private BIP bip;
 
     public static void install(byte[] bArray, short bOffset, byte bLength) {
         new BitaWalletCard().register();
@@ -115,6 +115,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
     public void process(APDU apdu) {
         if (selectingApplet()) {
+            display.initialize();
             display.homeScreen(scratch515, (short) 0);
             return;
         }

@@ -7,7 +7,7 @@ import com.es.specialmethod.ESUtil;
 
 public class Display {
 
-	private boolean isHomeScreen = false;
+	private boolean isHomeScreen;
 
 	private static final byte NEWLINE = (byte) 0x0A;
 	private static final byte SPACE = (byte) ' ';
@@ -42,6 +42,11 @@ public class Display {
 		// esMethod = new method();
 		// esMethod.CommBuff = JCSystem.makeTransientByteArray((short) 300,
 		// JCSystem.CLEAR_ON_DESELECT);
+	}
+
+	public boolean initialize() {
+		isHomeScreen = false;
+		return true;
 	}
 
 	public boolean homeScreen(byte[] scratch, short scratchOffset) {

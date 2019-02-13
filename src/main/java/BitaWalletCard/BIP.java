@@ -3,7 +3,7 @@ package BitaWalletCard;
 import javacard.framework.*;
 import javacard.security.*;
 
-class BIP {
+public class BIP {
 
     private static final byte BITCOIN_SEED[] = { 'B', 'i', 't', 'c', 'o', 'i', 'n', ' ', 's', 'e', 'e', 'd' };
     private static final byte SUBWALLET_SEED[] = { 'S', 'u', 'b', 'w', 'a', 'l', 'l', 'e', 't', ' ', '0', '0', '0',
