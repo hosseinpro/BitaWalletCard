@@ -1,6 +1,6 @@
 // Version: 1.3
 
-import sha from "jssha";
+const sha = require("jssha");
 
 ("use strict");
 
