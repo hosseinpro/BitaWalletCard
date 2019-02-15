@@ -131,9 +131,7 @@ public class Display {
 
 		offset = Util.arrayCopyNonAtomic(MSG_VCODE, (short) 0, scratch, offset, (short) MSG_VCODE.length);
 
-		short vcodeOffset = (short) (kcvOffset + kcvLength - 4);
-
-		offset = Util.arrayCopyNonAtomic(kcv, vcodeOffset, scratch, offset, (short) 4);
+		offset = Util.arrayCopyNonAtomic(kcv, kcvOffset, scratch, offset, kcvLength);
 
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
@@ -152,9 +150,7 @@ public class Display {
 
 		offset = Util.arrayCopyNonAtomic(MSG_VCODE, (short) 0, scratch, offset, (short) MSG_VCODE.length);
 
-		short vcodeOffset = (short) (kcvOffset + kcvLength - 4);
-
-		offset = Util.arrayCopyNonAtomic(kcv, vcodeOffset, scratch, offset, (short) 4);
+		offset = Util.arrayCopyNonAtomic(kcv, kcvOffset, scratch, offset, kcvLength);
 
 		scratch[offset++] = NEWLINE;
 		scratch[offset++] = NEWLINE;

@@ -1,6 +1,8 @@
-// Version: 1.1
+// Version: 1.3
 
-"use strict";
+import sha from "jssha";
+
+("use strict");
 
 module.exports = class BitaWalletCard {
   constructor(cardreaderTransmit) {
@@ -194,6 +196,14 @@ module.exports = class BitaWalletCard {
     return { fund, inputSection, signerKeyPaths };
   }
 
+  static generateKCV(data) {
+    const sha256 = new sha("SHA-256", "HEX");
+    sha256.update(data);
+    const hash = sha256.getHash("HEX");
+    const kcv = hash.substring(0, 4).toUpperCase();
+    return kcv;
+  }
+
   ////End of Utils
 
   ////Begin of card functions
@@ -224,6 +234,8 @@ module.exports = class BitaWalletCard {
           .catch(error => {
             reject(error);
           });
+      }).catch(error => {
+        reject(error);
       });
     });
   }
@@ -287,9 +299,9 @@ module.exports = class BitaWalletCard {
       }).catch(sw => {
         if (sw.substring(0, 3) === "63C") {
           const leftTries = parseInt(sw.substring(3), 16);
-          reject(leftTries);
+          reject({ leftTries });
         } else {
-          reject(sw);
+          reject({ error: sw });
         }
       });
     });

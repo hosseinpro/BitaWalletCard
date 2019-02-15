@@ -852,9 +852,9 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     }
 
     private void processGenerateTransportKey(APDU apdu) {
-        if (pin.isValidated() == false) {
-            ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
-        }
+        // if (pin.isValidated() == false) {
+        // ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
+        // }
 
         transportKey.getPrivate().clearKey();
 
@@ -1122,7 +1122,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         sha256.reset();
         short sha256Len = sha256.doFinal(inBubber, inOffset, inLength, scratch515, (short) 0);
 
-        return toHexString(scratch515, (short) 0, (short) 4, outBuffer, outOffset);
+        return toHexString(scratch515, (short) 0, (short) 2, outBuffer, outOffset);
 
         // Ripemd160.hash32(scratch515, (short) 0, scratch515, sha256Len, scratch515,
         // (short) 60);
