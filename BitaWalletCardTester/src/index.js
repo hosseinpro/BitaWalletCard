@@ -274,9 +274,15 @@ var recursiveAsyncReadLine = function() {
         });
         break;
       case "generatetransportkey":
-        bitaWalletCard.generateTransportKey().catch(err => {
-          print(err);
-        });
+        bitaWalletCard
+          .generateTransportKey()
+          .then(res => {
+            const kcv1 = BitaWalletCard.generateKCV(res.transportKeyPublic);
+            print("kcv: " + kcv1);
+          })
+          .catch(err => {
+            print(err);
+          });
         break;
       case "importtransportkeypublic": //backupCardTransportKeyPublic
         bitaWalletCard.importTransportKeyPublic(inputs[1]).catch(err => {

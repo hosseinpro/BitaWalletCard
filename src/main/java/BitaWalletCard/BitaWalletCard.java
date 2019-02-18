@@ -44,6 +44,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     private static byte[] mseed;
     private static boolean mseedInitialized;
     private ECPrivateKey signKey;
+    private MessageDigest sha1;
     private MessageDigest sha256;
     private Signature ecdsaSignature;
     private KeyAgreement ecdh;
@@ -102,6 +103,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         main500 = JCSystem.makeTransientByteArray((short) 500, JCSystem.CLEAR_ON_DESELECT);
         scratch515 = JCSystem.makeTransientByteArray((short) 500, JCSystem.CLEAR_ON_DESELECT);
 
+        sha1 = MessageDigest.getInstance(MessageDigest.ALG_SHA, false);
         sha256 = MessageDigest.getInstance(MessageDigest.ALG_SHA_256, false);
         ecdsaSignature = Signature.getInstance(Signature.ALG_ECDSA_SHA_256, false);
         ecdh = KeyAgreement.getInstance(ALG_EC_SVDP_DH_PLAIN_XY, false);
@@ -1095,43 +1097,34 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         sendLongResponse(apdu, (short) 0, signedTxLength);
     }
 
-    private short toHexString(byte[] input, short inputOffset, short inputLength, byte[] outputHex,
-            short outputHexOffset) {
-        byte b = 0;
-        for (short i = 0; i < inputLength; i++) {
-            b = (byte) ((input[(short) (inputOffset + i)] & 0xF0) >> 4);
-            if ((b >= 0) && (b <= 9)) {
-                b = (byte) (b + 0x30);
-            } else {
-                b = (byte) (b + 0x37);
-            }
-            outputHex[(short) (outputHexOffset + (i * 2))] = b;
-
-            b = (byte) (input[(short) (inputOffset + i)] & 0x0F);
-            if ((b >= 0) && (b <= 9)) {
-                b = (byte) (b + 0x30);
-            } else {
-                b = (byte) (b + 0x37);
-            }
-            outputHex[(short) (outputHexOffset + (i * 2 + 1))] = b;
-        }
-        return (short) (inputLength * 2);
-    }
+    /*
+     * private short toHexString(byte[] input, short inputOffset, short inputLength,
+     * byte[] outputHex, short outputHexOffset) { byte b = 0; for (short i = 0; i <
+     * inputLength; i++) { b = (byte) ((input[(short) (inputOffset + i)] & 0xF0) >>
+     * 4); if ((b >= 0) && (b <= 9)) { b = (byte) (b + 0x30); } else { b = (byte) (b
+     * + 0x37); } outputHex[(short) (outputHexOffset + (i * 2))] = b;
+     * 
+     * b = (byte) (input[(short) (inputOffset + i)] & 0x0F); if ((b >= 0) && (b <=
+     * 9)) { b = (byte) (b + 0x30); } else { b = (byte) (b + 0x37); }
+     * outputHex[(short) (outputHexOffset + (i * 2 + 1))] = b; } return (short)
+     * (inputLength * 2); }
+     */
 
     private short generateKCV(byte[] inBubber, short inOffset, short inLength, byte[] outBuffer, short outOffset) {
-        sha256.reset();
-        short sha256Len = sha256.doFinal(inBubber, inOffset, inLength, scratch515, (short) 0);
+        sha1.reset();
+        short sha1Len = sha1.doFinal(inBubber, inOffset, inLength, scratch515, (short) 0);
 
-        return toHexString(scratch515, (short) 0, (short) 2, outBuffer, outOffset);
+        // return toHexString(scratch515, (short) 0, (short) 2, outBuffer, outOffset);
 
         // Ripemd160.hash32(scratch515, (short) 0, scratch515, sha256Len, scratch515,
         // (short) 60);
         // short ripemd160Len = (short) 20;
 
-        // short b58Len = Base58.encode(scratch515, sha256Len, ripemd160Len, outBuffer,
-        // outOffset, scratch515, (short) 60);
+        short b58Len = Base58.encode(scratch515, (short) 0, sha1Len, scratch515, (short) (sha1Len + 0), scratch515,
+                (short) (sha1Len + 0 + 50));
 
-        // return b58Len;
+        Util.arrayCopyNonAtomic(scratch515, sha1Len, outBuffer, outOffset, (short) 4);
+        return (short) 4;
     }
 
     private void sendLongResponse(APDU apdu, short responseOffset1, short responseLength1) {

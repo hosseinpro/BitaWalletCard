@@ -197,10 +197,11 @@ module.exports = class BitaWalletCard {
   }
 
   static generateKCV(data) {
-    const sha256 = new sha("SHA-256", "HEX");
+    const sha256 = new sha("SHA-1", "HEX");
     sha256.update(data);
     const hash = sha256.getHash("HEX");
-    const kcv = hash.substring(0, 4).toUpperCase();
+    const b58 = BitaWalletCard.b58Encode(hash);
+    const kcv = b58.substring(0, 4);
     return kcv;
   }
 
