@@ -125,10 +125,14 @@ var recursiveAsyncReadLine = function() {
           print(err);
         });
         break;
-      case "wipe": //yesCode, newPIN, newLabel
-        bitaWalletCard.wipe(inputs[1], inputs[2], inputs[3]).catch(err => {
-          print(err);
-        });
+      case "wipe": //yesCode, newPIN, newLabel, genMasterSeed
+        let genMasterSeed = false;
+        inputs[4] === "true" ? (genMasterSeed = true) : (genMasterSeed = false);
+        bitaWalletCard
+          .wipe(inputs[1], inputs[2], inputs[3], genMasterSeed)
+          .catch(err => {
+            print(err);
+          });
         break;
       case "verifypin": //pin
         bitaWalletCard.verifyPIN(inputs[1]).catch(err => {

@@ -1,4 +1,4 @@
-// Version: 1.3
+// Version: 1.4
 
 const sha = require("jssha");
 
@@ -222,7 +222,7 @@ module.exports = class BitaWalletCard {
     });
   }
 
-  wipe(yesCode, newPIN, newLabel) {
+  wipe(yesCode, newPIN, newLabel, genMasterSeed = true) {
     const apduWipe = "00 E2 00 00 04" + BitaWalletCard.ascii2hex(yesCode);
     return new Promise((resolve, reject) => {
       this.transmit(apduWipe, responseAPDU => {
@@ -230,7 +230,10 @@ module.exports = class BitaWalletCard {
           .then(() => this.changePIN(newPIN))
           .then(() => this.verifyPIN(newPIN))
           .then(() => this.setLabel(newLabel))
-          .then(() => this.generateMasterSeed().then(resolve({ result: true })))
+          .then(() => {
+            if (genMasterSeed) this.generateMasterSeed();
+          })
+          .then(resolve({ result: true }))
           .catch(error => {
             reject(error);
           });
