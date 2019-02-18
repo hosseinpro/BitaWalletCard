@@ -1120,10 +1120,11 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         // (short) 60);
         // short ripemd160Len = (short) 20;
 
-        short b58Len = Base58.encode(scratch515, (short) 0, sha1Len, scratch515, (short) (sha1Len + 0), scratch515,
-                (short) (sha1Len + 0 + 50));
+        short b58Len = Base58.encode(scratch515, (short) 0, sha1Len, scratch515, sha1Len, scratch515,
+                (short) (sha1Len + 50));
 
-        Util.arrayCopyNonAtomic(scratch515, sha1Len, outBuffer, outOffset, (short) 4);
+        Util.arrayCopyNonAtomic(scratch515, (short) (sha1Len + b58Len - 4), outBuffer, outOffset,
+                (short) (sha1Len + b58Len));
         return (short) 4;
     }
 
