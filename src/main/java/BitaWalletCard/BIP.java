@@ -246,6 +246,50 @@ public class BIP {
         return resultLen;
     }
 
+    public short bip44GetXPub(byte[] masterSeed, short masterSeedOffset, short masterSeedLength, byte[] keyPath,
+            short keyPathOffset, byte[] xpub, short xpubOffset, byte[] scratch232, short scratchOffset) {
+
+        // m[1]/44'[1]/coin'[1]/account'[1]/change[1]
+        short coin = keyPath[(short) (keyPathOffset + 2)];
+
+        // m
+        if ((keyPath[(short) (keyPathOffset + 0)] != 'm')
+                || !bip32GenerateMasterKey(masterSeed, masterSeedOffset, masterSeedLength, scratch232, scratchOffset)) {
+            return 0;
+        }
+        // purpose'
+        if ((keyPath[(short) (keyPathOffset + 1)] != 44)
+                || !bip32DerivePrivateKey(scratch232, scratchOffset, keyPath[(short) (keyPathOffset + 1)], true,
+                        scratch232, scratchOffset, scratch232, (short) (scratchOffset + 64))) {
+            return 0;
+        }
+        // coin'
+        if (!bip32DerivePrivateKey(scratch232, scratchOffset, keyPath[(short) (keyPathOffset + 2)], true, scratch232,
+                scratchOffset, scratch232, (short) (scratchOffset + 64))) {
+            return 0;
+        }
+        // account'
+        if ((keyPath[(short) (keyPathOffset + 3)] > 255)
+                || !bip32DerivePrivateKey(scratch232, scratchOffset, keyPath[(short) (keyPathOffset + 3)], true,
+                        scratch232, scratchOffset, scratch232, (short) (scratchOffset + 64))) {
+            return 0;
+        }
+        // change
+        if ((keyPath[(short) (keyPathOffset + 4)] > 1)
+                || !bip32DerivePrivateKey(scratch232, scratchOffset, keyPath[(short) (keyPathOffset + 4)], false,
+                        scratch232, scratchOffset, scratch232, (short) (scratchOffset + 64))) {
+            return 0;
+        }
+
+        // xPri to xPub : N((k, c)) -> (K, c)
+        short offset = xpubOffset;
+        offset += ec256PrivateKeyToPublicKey(scratch232, scratchOffset, xpub, xpubOffset, false);
+
+        offset = Util.arrayCopyNonAtomic(scratch232, (short) (scratchOffset + 32), xpub, offset, (short) 32);
+
+        return (short) (offset - xpubOffset);
+    }
+
     private void decToHexString4(short decimal, byte[] hexString, short hexStringOffset) {
         short t = decimal;
         for (short i = 0; i < 4; i++) {

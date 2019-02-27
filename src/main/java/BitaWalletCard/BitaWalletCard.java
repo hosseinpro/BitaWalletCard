@@ -181,6 +181,9 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             } else if ((ins == (byte) 0xC0) && (p1 == (byte) 0xBC) && (p2 == (byte) 0x07)) {
                 processGetAddressList(apdu);
                 commandLock = CL_NONE;
+            } else if ((ins == (byte) 0xC0) && (p1 == (byte) 0xBC) && (p2 == (byte) 0x17)) {
+                processGetXPub(apdu);
+                commandLock = CL_NONE;
             } else if ((ins == (byte) 0xC0) && (p1 == (byte) 0xBC) && (p2 == (byte) 0x08)) {
                 processGetSubWalletAddressList(apdu);
                 commandLock = CL_NONE;
@@ -630,6 +633,33 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
                 buf[OFFSET_CDATA + 7], main500, (short) 32, scratch515, (short) 0);
 
         sendLongResponse(apdu, (short) 32, reslutLen);
+    }
+
+    private void processGetXPub(APDU apdu) {
+        display.homeScreen(scratch515, (short) 0);
+
+        if (pin.isValidated() == false) {
+            ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
+        }
+
+        if (mseedInitialized == false) {
+            ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);
+        }
+
+        apdu.setIncomingAndReceive();
+        byte[] buf = apdu.getBuffer();
+        short lc = apdu.getIncomingLength();
+
+        if (lc != (byte) 0x05) {
+            ISOException.throwIt(SW_WRONG_LENGTH);
+        }
+
+        short xpubLen = bip.bip44GetXPub(mseed, (short) 0, MSEED_SIZE, buf, OFFSET_CDATA, main500, (short) 0,
+                scratch515, (short) 0);
+
+        apdu.setOutgoing();
+        apdu.setOutgoingLength(xpubLen);
+        apdu.sendBytesLong(main500, (short) 0, xpubLen);
     }
 
     private void processGetSubWalletAddressList(APDU apdu) {
