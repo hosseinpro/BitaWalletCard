@@ -12,7 +12,6 @@
   "dependencies": {
     "elliptic": "^6.4.1",
     "jssha": "^2.3.1",
-    "ripemd160": "^2.0.2",
     "npm": "^6.8.0",
     "pcsclite": "^0.6.0",
     "request": "^2.88.0"

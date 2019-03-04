@@ -2,7 +2,7 @@
 
 const sha = require("jssha");
 const ecc = require("elliptic").ec;
-var RIPEMD160 = require("ripemd160");
+const Ripemd160 = require("./Ripemd160");
 
 module.exports = class BitaWalletCard {
   constructor(cardreaderTransmit) {
@@ -518,10 +518,7 @@ module.exports = class BitaWalletCard {
     let sha256 = new sha("SHA-256", "HEX");
     sha256.update(pubKeyCompressed);
     let hash = sha256.getHash("HEX");
-
-    const ripemd160 = new RIPEMD160();
-    ripemd160.update(hash, "hex");
-    hash = ripemd160.digest("hex");
+    hash = Ripemd160.hash(hash);
 
     if (coin === BitaWalletCard.btcMain) hash = "00" + hash;
     else hash = "6F" + hash;
