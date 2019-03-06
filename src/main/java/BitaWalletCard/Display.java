@@ -27,7 +27,7 @@ public class Display {
 	private static final byte MSG_BACKUPKEY[] = { ' ', ' ', ' ', 'B', 'a', 'c', 'k', 'u', 'p', ' ', 'k', 'e', 'y' };
 	private static final byte MSG_VCODE[] = { ' ', ' ', ' ', 'v', 'c', 'o', 'd', 'e', ':' };
 	private static final byte BTN_SEND[] = { 'S', 'E', 'N', 'D', ':' };
-	private static final byte MSG_TO[] = { 'T', 'o' };
+	private static final byte MSG_TO[] = { 'T', 'o', ':' };
 	private static final byte MSG_BTC[] = { 'B', 'T', 'C' };
 	private static final byte MSG_FEE[] = { 'f', 'e', 'e' };
 	private static final byte MSG_MBTC[] = { 'm', 'B', 'T', 'C' };
@@ -180,7 +180,6 @@ public class Display {
 		scratch[offset++] = NEWLINE;
 
 		offset = Util.arrayCopyNonAtomic(MSG_TO, (short) 0, scratch, offset, (short) MSG_TO.length);
-		scratch[offset++] = NEWLINE;
 
 		offset += Base58.encode(destAddress, destAddressOffset, destAddressLength, scratch, offset, scratch,
 				(short) (offset + 50));
@@ -197,6 +196,7 @@ public class Display {
 		// MSG_FEE.length);
 		// scratch[offset++] = NEWLINE;
 
+		scratch[offset++] = NEWLINE;
 		scratch[offset++] = NEWLINE;
 		scratch[offset++] = NEWLINE;
 
@@ -231,8 +231,19 @@ public class Display {
 		// original hex number length : 8B => satoshiLength : 20B
 		// 99.99999999 BTC
 
+		// remove left zeros
+		short startOffset = satoshiOffset;
+		short decimalLength = 12;
+		for (short i = satoshiOffset; i < (short) (satoshiOffset + 11); i++) {
+			if (satoshi[i] == 0x30) {
+				startOffset++;
+				decimalLength--;
+			} else
+				break;
+		}
+
 		short offset = btcOffset;
-		offset = Util.arrayCopyNonAtomic(satoshi, (short) (satoshiOffset + 10), btc, offset, (short) 2);
+		offset = Util.arrayCopyNonAtomic(satoshi, startOffset, btc, offset, decimalLength);
 		btc[offset++] = '.';
 		offset = Util.arrayCopyNonAtomic(satoshi, (short) (satoshiOffset + 12), btc, offset, (short) 8);
 
