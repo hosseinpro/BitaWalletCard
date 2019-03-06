@@ -15,7 +15,9 @@ public class Display {
 
 	private static final short MAX_IMG_DATA_EACH_PKT = (short) 240;
 
-	private static final byte MSG_HOME[] = { ' ', ' ', ' ', 'B', 'i', 't', 'a', 'W', 'a', 'l', 'l', 'e', 't' };
+	// private static final byte MSG_HOME[] = { ' ', ' ', ' ', 'B', 'i', 't', 'a',
+	// 'W', 'a', 'l', 'l', 'e', 't' };
+	private static final byte MSG_HOME[] = { ' ', ' ', ' ', 'X', 'e', 'b', 'a', 'W', 'a', 'l', 'l', 'e', 't' };
 	private static final byte MSG_SUCCESSFUL[] = { ' ', ' ', ' ', 'S', 'u', 'c', 'c', 'e', 's', 's', 'f', 'u', 'l' };
 	private static final byte MSG_FAILED[] = { ' ', ' ', ' ', ' ', ' ', 'F', 'a', 'i', 'l', 'e', 'd' };
 	private static final byte MSG_WIPE[] = { ' ', ' ', ' ', ' ', 'S', 'u', 'r', 'e', ' ', 't', 'o', NEWLINE, ' ', ' ',
