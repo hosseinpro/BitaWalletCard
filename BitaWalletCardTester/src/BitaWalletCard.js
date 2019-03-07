@@ -213,6 +213,14 @@ module.exports = class BitaWalletCard {
     return kcv;
   }
 
+  static satoshi2btc(satoshi) {
+    return satoshi / 100000000;
+  }
+
+  static btc2satoshi(btc) {
+    return parseInt(btc * 100000000);
+  }
+
   ////End of Utils
 
   ////Begin of card functions
