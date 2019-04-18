@@ -315,30 +315,39 @@ var recursiveAsyncReadLine = function() {
             print(err);
           });
 
-          inputSection = BitaWalletCard.buildInputSection(
-            spend,
-            fee,
-            addressInfo
-          );
-          if (inputSection == null) {
-            print("Error: Not enough fund!");
-            break;
-          }
+          // inputSection = BitaWalletCard.buildInputSection(
+          //   spend,
+          //   fee,
+          //   addressInfo
+          // );
+          // if (inputSection == null) {
+          //   print("Error: Not enough fund!");
+          //   break;
+          // }
         }
         break;
       case "signtx": //yesCode, changeKeyPath
         {
           const yesCode = inputs[1];
-          const changeKeyPath = inputs[2];
+          // const changeKeyPath = inputs[2];
+
+          // bitaWalletCard
+          //   .signTx(
+          //     yesCode,
+          //     inputSection.fund,
+          //     changeKeyPath,
+          //     inputSection.inputSection,
+          //     inputSection.signerKeyPaths
+          //   )
+
+          const fund = 2550000;
+          const changeKeyPath = "6D2C0000010000";
+          const inputSection1 =
+            "011179c473e6edbdd22d6f41f585ee24ac1ef5f754743dd27a1c490dace4e8e04a000000001976a914cea064ea822a6de4441ce2b77ad9f15f8e29523d88acFFFFFFFF";
+          const signerKeyPaths = "6D2C0000000002";
 
           bitaWalletCard
-            .signTx(
-              yesCode,
-              inputSection.fund,
-              changeKeyPath,
-              inputSection.inputSection,
-              inputSection.signerKeyPaths
-            )
+            .signTx(yesCode, fund, changeKeyPath, inputSection1, signerKeyPaths)
             .then(res => {
               print(res.signedTx);
             })

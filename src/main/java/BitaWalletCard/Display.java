@@ -175,7 +175,8 @@ public class Display {
 
 		short offset = (short) (scratchOffset + HEADER_SIZE);
 
-		toDecimalString(amount, amountOffset, amountLength, scratch, (short) (offset + 10));// temp use of scratch
+		toDecimalString(amount, amountOffset, amountLength, scratch, (short) (offset + 10), scratch,
+				(short) (offset + 30));
 		offset += satoshi2BTC(scratch, (short) (offset + 10), scratch, offset);
 		scratch[offset++] = SPACE;
 		offset = Util.arrayCopyNonAtomic(MSG_BTC, (short) 0, scratch, offset, (short) MSG_BTC.length);
@@ -212,17 +213,21 @@ public class Display {
 	private static final byte[] BYTES_TO_DECIMAL_SIZE = { 0, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25, 27, 29, 32, 34, 37,
 			39 };
 
-	private short toDecimalString(byte[] uBigBuf, short uBigOff, short uBigLen, byte[] decBuf, short decOff) {
+	private short toDecimalString(byte[] uBigBuf, short uBigOff, short uBigLen, byte[] decBuf, short decOff,
+			byte[] scratch20, short scratchOffset) {
+
+		Util.arrayCopyNonAtomic(uBigBuf, uBigOff, scratch20, scratchOffset, uBigLen);
+
 		short dividend, division, remainder;
-		final short uBigEnd = (short) (uBigOff + uBigLen);
+		final short uBigEnd = (short) (scratchOffset + uBigLen);
 		final short decDigits = BYTES_TO_DECIMAL_SIZE[uBigLen];
 		for (short decIndex = (short) (decOff + decDigits - 1); decIndex >= decOff; decIndex--) {
 			remainder = 0;
-			for (short uBigIndex = uBigOff; uBigIndex < uBigEnd; uBigIndex++) {
-				dividend = (short) ((remainder << 8) + (uBigBuf[uBigIndex] & 0xFF));
+			for (short uBigIndex = scratchOffset; uBigIndex < uBigEnd; uBigIndex++) {
+				dividend = (short) ((remainder << 8) + (scratch20[uBigIndex] & 0xFF));
 				division = (short) (dividend / 10);
 				remainder = (short) (dividend - division * 10);
-				uBigBuf[uBigIndex] = (byte) division;
+				scratch20[uBigIndex] = (byte) division;
 			}
 			decBuf[decIndex] = (byte) (remainder + '0');
 		}
