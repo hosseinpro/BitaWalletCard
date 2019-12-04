@@ -201,14 +201,6 @@ var recursiveAsyncReadLine = function() {
             print(err);
           });
         break;
-      case "getchildaddress": //coin, parentXPub, addressIndex
-        const address = BitaWalletCard.getChildAddress(
-          inputs[1],
-          inputs[2],
-          inputs[3]
-        );
-        print("address : " + address);
-        break;
       case "getsubwalletaddresslist": //numOfSub, firstSubWalletNumber
         const numOfSub = parseInt(inputs[1]);
         bitaWalletCard
@@ -374,7 +366,7 @@ function print(message) {
 }
 
 function completer(line) {
-  const completions = "test boot listreaders connect disconnect transmit selectapplet requestwipe wipe verifypin changepin getlabel setlabel importmasterseedplain generatemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getxpub getchildaddress getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
+  const completions = "test boot listreaders connect disconnect transmit selectapplet requestwipe wipe verifypin changepin getlabel setlabel importmasterseedplain generatemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getxpub getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
     " "
   );
   const hits = completions.filter(c => c.startsWith(line));
