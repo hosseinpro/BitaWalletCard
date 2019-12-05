@@ -210,6 +210,30 @@ public class Display {
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
+	private static final byte OTP[] = { ' ', ' ', ' ', '(', '1', ')', ' ', '(', '2', ')', ' ', '(', '3', ')',
+			(byte) 0x0A, ' ', ' ', ' ', '(', '4', ')', ' ', '(', '5', ')', ' ', '(', '6', ')', (byte) 0x0A, ' ', ' ',
+			' ', '(', '7', ')', ' ', '(', '8', ')', ' ', '(', '9', ')', (byte) 0x0A, ' ', ' ', ' ', ' ', ' ', ' ', ' ',
+			'(', '0', ')', ' ', ' ', ' ', ' ' };// len=58
+
+	public boolean pinScreen(byte[] randomPin, short randomPinOffset, short randomPinLength, byte[] scratch66,
+			short scratchOffset) {
+		short offset = (short) (scratchOffset + 8);
+		short otpBegin = offset;
+		offset = Util.arrayCopyNonAtomic(OTP, (short) 0, scratch66, offset, (short) OTP.length);
+		scratch66[(short) (otpBegin + 4)] = randomPin[(short) (randomPinOffset + 1)];
+		scratch66[(short) (otpBegin + 8)] = randomPin[(short) (randomPinOffset + 2)];
+		scratch66[(short) (otpBegin + 12)] = randomPin[(short) (randomPinOffset + 3)];
+		scratch66[(short) (otpBegin + 19)] = randomPin[(short) (randomPinOffset + 4)];
+		scratch66[(short) (otpBegin + 23)] = randomPin[(short) (randomPinOffset + 5)];
+		scratch66[(short) (otpBegin + 27)] = randomPin[(short) (randomPinOffset + 6)];
+		scratch66[(short) (otpBegin + 34)] = randomPin[(short) (randomPinOffset + 7)];
+		scratch66[(short) (otpBegin + 38)] = randomPin[(short) (randomPinOffset + 8)];
+		scratch66[(short) (otpBegin + 42)] = randomPin[(short) (randomPinOffset + 9)];
+		scratch66[(short) (otpBegin + 53)] = randomPin[(short) (randomPinOffset + 0)];
+
+		return displayText(scratch66, scratchOffset, (short) (offset - scratchOffset));
+	}
+
 	private static final byte[] BYTES_TO_DECIMAL_SIZE = { 0, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25, 27, 29, 32, 34, 37,
 			39 };
 
@@ -285,7 +309,7 @@ public class Display {
 		return length;
 	}
 
-	private boolean displayText(byte[] inBuff, short inOffset, short inLength) {
+	public boolean displayText(byte[] inBuff, short inOffset, short inLength) {
 
 		esUtil.clearScreen();
 

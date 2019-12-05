@@ -20,10 +20,11 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
     private static final short CL_NONE = 0;
     private static final short CL_WIPE = 1;
-    private static final short CL_EXPORT_MSEED = 2;
-    private static final short CL_EXPORT_SUBWALLET = 3;
-    private static final short CL_GENERATE_SUBWALLET = 4;
-    private static final short CL_SIGN_TX = 5;
+    private static final short CL_VERIFY_PIN = 2;
+    private static final short CL_EXPORT_MSEED = 3;
+    private static final short CL_EXPORT_SUBWALLET = 4;
+    private static final short CL_GENERATE_SUBWALLET = 5;
+    private static final short CL_SIGN_TX = 6;
 
     private static OwnerPIN pin;
     private static OwnerPIN yesCode;
@@ -88,6 +89,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         randomData.generateData(serialNumber, (short) 0, SERIALNUMBER_SIZE);
 
         tempSerialNumber = JCSystem.makeTransientByteArray(SERIALNUMBER_SIZE, JCSystem.CLEAR_ON_DESELECT);
+
+        randomPin = JCSystem.makeTransientByteArray((short) 10, JCSystem.CLEAR_ON_DESELECT);
 
         mseed = new byte[64];
         mseedInitialized = false;
@@ -154,7 +157,13 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             } else if ((ins == (byte) 0xD0) && (p1 == (byte) 0xBC) && (p2 == (byte) 0x02)) {
                 processSetLabel(apdu);
                 commandLock = CL_NONE;
+            } else if ((ins == (byte) 0x20) && (p1 == (byte) 0x01) && (p2 == (byte) 0x00)) {
+                processRequestVerifyPIN(apdu);
+                commandLock = CL_VERIFY_PIN;
             } else if ((ins == (byte) 0x20) && (p1 == (byte) 0x00) && (p2 == (byte) 0x00)) {
+                if (commandLock != CL_VERIFY_PIN) {
+                    ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);
+                }
                 processVerifyPIN(apdu);
                 commandLock = CL_NONE;
             } else if ((ins == (byte) 0x24) && (p1 == (byte) 0x01) && (p2 == (byte) 0x00)) {
@@ -232,6 +241,39 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         }
     }
 
+    private byte[] randomPin;// = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+
+    private void generateRandomPin(byte[] scratch1, short scratchOffset) {
+
+        for (short i = 0; i < (short) 10; i++) {
+            randomPin[i] = (byte) (i + (short) 0x30);
+        }
+
+        for (short i = 0; i < (short) 7; i++) {
+            do {
+                randomData.generateData(scratch1, scratchOffset, (short) 1);
+            } while (scratch1[scratchOffset] < 0);
+            short index1 = (short) (scratch1[scratchOffset] % (short) 10);
+
+            do {
+                randomData.generateData(scratch1, scratchOffset, (short) 1);
+            } while (scratch1[scratchOffset] < 0);
+            short index2 = (short) (scratch1[scratchOffset] % (short) 10);
+
+            byte soap = randomPin[index1];
+            randomPin[index1] = randomPin[index2];
+            randomPin[index2] = soap;
+        }
+    }
+
+    private void decodeRandomPin(byte[] encodedPin, short encodedPinOffset, byte[] decodedPin, short decodedPinOffset) {
+
+        for (short i = 0; i < PIN_SIZE; i++) {
+            byte index = (byte) (encodedPin[(short) (encodedPinOffset + i)] - (short) 0x30);
+            decodedPin[(short) (decodedPinOffset + i)] = randomPin[index];
+        }
+    }
+
     private void test(APDU apdu) {
 
         apdu.setIncomingAndReceive();
@@ -239,6 +281,16 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short lc = apdu.getIncomingLength();
 
         short offset = (short) 8;
+
+        byte p1 = buf[OFFSET_P1];
+        if (p1 == 0x01) {
+
+            generateRandomPin(scratch515, (short) 0);
+
+            display.pinScreen(randomPin, (short) 0, (short) (randomPin.length), scratch515, (short) 0);
+        } else {
+            decodeRandomPin(buf, OFFSET_CDATA, scratch515, (short) 0);
+        }
         // byte[] testAddress = { 'm', 'v', 'y', 'Q', 'Z', 'q', '6', 'U', 'v', 'k', 'M',
         // 'B', '9', '7', 'K', '9', 'b', 'U',
         // 'e', 'H', 'p', '4', 'V', 'V', 'S', '1', 'N', '7', 'S', 'e', 'D', 'z', 'R',
@@ -246,12 +298,12 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         // offset = Util.arrayCopyNonAtomic(testAddress, (short) 0, scratch515, offset,
         // (short) testAddress.length);
 
-        short length = buf[OFFSET_CDATA];
-        for (short i = 0; i < length; i++) {
-            scratch515[offset++] = (byte) ((byte) (i % 10) + 0x30);
-        }
+        // short length = buf[OFFSET_CDATA];
+        // for (short i = 0; i < length; i++) {
+        // scratch515[offset++] = (byte) ((byte) (i % 10) + 0x30);
+        // }
 
-        // display.displayText(scratch515, (short) 0, offset);
+        // display.displayText(OTP, (short) 0, (short) OTP.length);
 
         // byte[] a = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x17, 0x70 };
         // byte[] c = new byte[100];
@@ -379,6 +431,16 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         labelLength = Util.arrayCopyNonAtomic(buf, OFFSET_CDATA, label, (short) 0, lc);
     }
 
+    private void processRequestVerifyPIN(APDU apdu) {
+        generateRandomPin(scratch515, (short) 0);
+
+        display.pinScreen(randomPin, (short) 0, (short) (randomPin.length), scratch515, (short) 0);
+
+        // apdu.setOutgoing();
+        // apdu.setOutgoingLength((short) 10);
+        // apdu.sendBytesLong(randomPin, (short) 0, (short) 10);
+    }
+
     private void processVerifyPIN(APDU apdu) {
         display.homeScreen(scratch515, (short) 0);
 
@@ -389,7 +451,14 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             ISOException.throwIt(SW_WRONG_LENGTH);
         }
 
-        if (pin.check(buf, OFFSET_CDATA, PIN_SIZE) == false) {
+        decodeRandomPin(buf, OFFSET_CDATA, scratch515, (short) 0);
+
+        // apdu.setOutgoing();
+        // apdu.setOutgoingLength(PIN_SIZE);
+        // apdu.sendBytesLong(scratch515, (short) 0, PIN_SIZE);
+
+        // if (pin.check(buf, OFFSET_CDATA, PIN_SIZE) == false) {
+        if (pin.check(scratch515, (short) 0, PIN_SIZE) == false) {
             ISOException.throwIt((short) (SW_PIN_INCORRECT_TRIES_LEFT | pin.getTriesRemaining()));
         }
     }
