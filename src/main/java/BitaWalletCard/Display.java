@@ -21,7 +21,7 @@ public class Display {
 	private static final byte MSG_SUCCESSFUL[] = { ' ', ' ', ' ', 'S', 'u', 'c', 'c', 'e', 's', 's', 'f', 'u', 'l' };
 	private static final byte MSG_FAILED[] = { ' ', ' ', ' ', ' ', ' ', 'F', 'a', 'i', 'l', 'e', 'd' };
 	private static final byte MSG_WIPE[] = { ' ', ' ', ' ', ' ', 'S', 'u', 'r', 'e', ' ', 't', 'o', NEWLINE, ' ', ' ',
-			' ', ' ', ' ', 'w', 'i', 'p', 'e', '?' };
+			' ', ' ', ' ', 'w', 'i', 'p', 'e', '?', '1', '2', '3', '4' };
 	private static final byte BTN_WIPE[] = { 'W', 'I', 'P', 'E', ':' };
 	private static final byte MSG_BACKUP[] = { ' ', ' ', ' ', ' ', 'S', 'u', 'r', 'e', ' ', 't', 'o', NEWLINE, ' ', ' ',
 			' ', ' ', 'b', 'a', 'c', 'k', 'u', 'p', '?' };
@@ -96,30 +96,23 @@ public class Display {
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
-	public boolean wipeScreen(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] scratch,
+	public boolean wipeScreen(byte[] randomPin, short randomPinOffset, short randomPinLength, byte[] scratch,
 			short scratchOffset) {
 		isHomeScreen = false;
 
 		short offset = (short) (scratchOffset + HEADER_SIZE);
 
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-
 		offset = Util.arrayCopyNonAtomic(MSG_WIPE, (short) 0, scratch, offset, (short) MSG_WIPE.length);
 
 		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
 
-		offset = Util.arrayCopyNonAtomic(BTN_WIPE, (short) 0, scratch, offset, (short) BTN_WIPE.length);
-
-		offset = Util.arrayCopyNonAtomic(yescode, yescodeOffset, scratch, offset, yescodeLength);
+		offset = fillKeyPad(randomPin, randomPinOffset, randomPinLength, scratch, offset);
 
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
-	public boolean backup1Screen(byte[] kcv, short kcvOffset, short kcvLength, byte[] scratch, short scratchOffset) {
+	public boolean backup1Screen(byte[] vcode, short vcodeOffset, short vcodeLength, byte[] scratch,
+			short scratchOffset) {
 		isHomeScreen = false;
 
 		short offset = (short) (scratchOffset + HEADER_SIZE);
@@ -135,13 +128,13 @@ public class Display {
 
 		offset = Util.arrayCopyNonAtomic(MSG_VCODE, (short) 0, scratch, offset, (short) MSG_VCODE.length);
 
-		offset = Util.arrayCopyNonAtomic(kcv, kcvOffset, scratch, offset, kcvLength);
+		offset = Util.arrayCopyNonAtomic(vcode, vcodeOffset, scratch, offset, vcodeLength);
 
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
-	public boolean backup2Screen(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] kcv, short kcvOffset,
-			short kcvLength, byte[] scratch, short scratchOffset) {
+	public boolean backup2Screen(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] vcode,
+			short vcodeOffset, short vcodeLength, byte[] scratch, short scratchOffset) {
 		isHomeScreen = false;
 
 		short offset = (short) (scratchOffset + HEADER_SIZE);
@@ -156,7 +149,7 @@ public class Display {
 
 		offset = Util.arrayCopyNonAtomic(MSG_VCODE, (short) 0, scratch, offset, (short) MSG_VCODE.length);
 
-		offset = Util.arrayCopyNonAtomic(kcv, kcvOffset, scratch, offset, kcvLength);
+		offset = Util.arrayCopyNonAtomic(vcode, vcodeOffset, scratch, offset, vcodeLength);
 
 		scratch[offset++] = NEWLINE;
 		scratch[offset++] = NEWLINE;
@@ -210,16 +203,34 @@ public class Display {
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
-	private static final byte OTP[] = { ' ', ' ', ' ', '(', '1', ')', ' ', '(', '2', ')', ' ', '(', '3', ')',
+	private static final byte MSG_KEYPAD[] = { ' ', ' ', ' ', '(', '1', ')', ' ', '(', '2', ')', ' ', '(', '3', ')',
 			(byte) 0x0A, ' ', ' ', ' ', '(', '4', ')', ' ', '(', '5', ')', ' ', '(', '6', ')', (byte) 0x0A, ' ', ' ',
 			' ', '(', '7', ')', ' ', '(', '8', ')', ' ', '(', '9', ')', (byte) 0x0A, ' ', ' ', ' ', ' ', ' ', ' ', ' ',
-			'(', '0', ')', ' ', ' ', ' ', ' ' };// len=58
+			'(', '0', ')', ' ', ' ', ' ', ' ' };// len=59
 
-	public boolean pinScreen(byte[] randomPin, short randomPinOffset, short randomPinLength, byte[] scratch66,
+	private short fillKeyPad(byte[] randomPin, short randomPinOffset, short randomPinLength, byte[] scratch59,
+			short scratchOffset) {
+		short offset = scratchOffset;
+		short otpBegin = offset;
+		offset = Util.arrayCopyNonAtomic(MSG_KEYPAD, (short) 0, scratch59, offset, (short) MSG_KEYPAD.length);
+		scratch59[(short) (otpBegin + 4)] = randomPin[(short) (randomPinOffset + 1)];
+		scratch59[(short) (otpBegin + 8)] = randomPin[(short) (randomPinOffset + 2)];
+		scratch59[(short) (otpBegin + 12)] = randomPin[(short) (randomPinOffset + 3)];
+		scratch59[(short) (otpBegin + 19)] = randomPin[(short) (randomPinOffset + 4)];
+		scratch59[(short) (otpBegin + 23)] = randomPin[(short) (randomPinOffset + 5)];
+		scratch59[(short) (otpBegin + 27)] = randomPin[(short) (randomPinOffset + 6)];
+		scratch59[(short) (otpBegin + 34)] = randomPin[(short) (randomPinOffset + 7)];
+		scratch59[(short) (otpBegin + 38)] = randomPin[(short) (randomPinOffset + 8)];
+		scratch59[(short) (otpBegin + 42)] = randomPin[(short) (randomPinOffset + 9)];
+		scratch59[(short) (otpBegin + 53)] = randomPin[(short) (randomPinOffset + 0)];
+		return offset;
+	}
+
+	public boolean setPinScreen(byte[] randomPin, short randomPinOffset, short randomPinLength, byte[] scratch66,
 			short scratchOffset) {
 		short offset = (short) (scratchOffset + 8);
 		short otpBegin = offset;
-		offset = Util.arrayCopyNonAtomic(OTP, (short) 0, scratch66, offset, (short) OTP.length);
+		offset = Util.arrayCopyNonAtomic(MSG_KEYPAD, (short) 0, scratch66, offset, (short) MSG_KEYPAD.length);
 		scratch66[(short) (otpBegin + 4)] = randomPin[(short) (randomPinOffset + 1)];
 		scratch66[(short) (otpBegin + 8)] = randomPin[(short) (randomPinOffset + 2)];
 		scratch66[(short) (otpBegin + 12)] = randomPin[(short) (randomPinOffset + 3)];
