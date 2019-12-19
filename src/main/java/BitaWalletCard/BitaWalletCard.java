@@ -52,8 +52,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
     private byte[] commandBuffer80;
     private short commandLock;
-    private byte[] vcode;
-    private byte[] randomPin;
+    private byte[] vcode1;
+    private byte[] randomButtons;
 
     private byte[] main500;
     private byte[] scratch515;
@@ -87,7 +87,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         serialNumber = new byte[SERIALNUMBER_SIZE];
         randomData.generateData(serialNumber, (short) 0, SERIALNUMBER_SIZE);
 
-        randomPin = JCSystem.makeTransientByteArray((short) 10, JCSystem.CLEAR_ON_DESELECT);
+        randomButtons = JCSystem.makeTransientByteArray((short) 10, JCSystem.CLEAR_ON_DESELECT);
 
         mseed = new byte[64];
         mseedInitialized = false;
@@ -111,7 +111,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
                 KeyBuilder.LENGTH_AES_256, false);
         aesCBCCipher = Cipher.getInstance(Cipher.ALG_AES_BLOCK_128_CBC_NOPAD, false);
         commandBuffer80 = JCSystem.makeTransientByteArray((short) 80, JCSystem.CLEAR_ON_DESELECT);
-        vcode = JCSystem.makeTransientByteArray((short) 8, JCSystem.CLEAR_ON_DESELECT);
+        vcode1 = JCSystem.makeTransientByteArray((short) 8, JCSystem.CLEAR_ON_DESELECT);
 
         commandLock = CL_NONE;
     }
@@ -192,10 +192,10 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         }
     }
 
-    private void generateRandomPin(byte[] scratch1, short scratchOffset) {
+    private void generateRandomButtons(byte[] scratch1, short scratchOffset) {
 
         for (short i = 0; i < (short) 10; i++) {
-            randomPin[i] = (byte) (i + (short) 0x30);
+            randomButtons[i] = (byte) (i + (short) 0x30);
         }
 
         for (short i = 0; i < (short) 7; i++) {
@@ -209,9 +209,9 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             } while (scratch1[scratchOffset] < 0);
             short index2 = (short) (scratch1[scratchOffset] % (short) 10);
 
-            byte soap = randomPin[index1];
-            randomPin[index1] = randomPin[index2];
-            randomPin[index2] = soap;
+            byte soap = randomButtons[index1];
+            randomButtons[index1] = randomButtons[index2];
+            randomButtons[index2] = soap;
         }
     }
 
@@ -222,11 +222,12 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short lc = apdu.getIncomingLength();
     }
 
-    private void decodeRandomPin(byte[] encodedPin, short encodedPinOffset, byte[] decodedPin, short decodedPinOffset) {
+    private void decodeRandomButtons(byte[] enteredButtons, short enteredButtonsOffset, byte[] decodedPin,
+            short decodedPinOffset) {
 
         for (short i = 0; i < PIN_SIZE; i++) {
-            byte index = (byte) (encodedPin[(short) (encodedPinOffset + i)] - (short) 0x30);
-            decodedPin[(short) (decodedPinOffset + i)] = randomPin[index];
+            byte index = (byte) (enteredButtons[(short) (enteredButtonsOffset + i)] - (short) 0x30);
+            decodedPin[(short) (decodedPinOffset + i)] = randomButtons[index];
         }
     }
 
@@ -257,7 +258,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             ISOException.throwIt(SW_WRONG_LENGTH);
         }
 
-        decodeRandomPin(buf, OFFSET_CDATA, scratch515, (short) 0);
+        decodeRandomButtons(buf, OFFSET_CDATA, scratch515, (short) 0);
 
         if (commandLock == CL_WIPE) {
             if (tempPin.check(scratch515, (short) 0, PIN_SIZE) == false) {
@@ -267,6 +268,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
                 ISOException.throwIt((short) (SW_PIN_INCORRECT_TRIES_LEFT | pin.getTriesRemaining()));
             } else {
                 wipeCommit(apdu);
+                commandLock = CL_NONE;
             }
             return;
         }
@@ -289,67 +291,52 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         byte[] buf = apdu.getBuffer();
         short offData = apdu.getOffsetCdata();
 
+        // [0]: 0=> main, 1=> backup
+        // [1]: labelLen
+        // [2..]: label
         Util.arrayCopyNonAtomic(buf, offData, commandBuffer80, (short) 0, buf[OFFSET_LC]);
 
-        generateRandomPin(scratch515, (short) 0);
+        // set tempPin to 1234
+        generateRandomButtons(scratch515, (short) 0);
+        scratch515[0] = '1';
+        scratch515[1] = '2';
+        scratch515[2] = '3';
+        scratch515[3] = '4';
+        tempPin.update(scratch515, (short) 0, PIN_SIZE);
+        tempPin.resetAndUnblock();
 
-        display.wipeScreen(randomPin, (short) 0, (short) (randomPin.length), scratch515, (short) 0);
+        display.wipeScreen(randomButtons, (short) 0, (short) (randomButtons.length), scratch515, (short) 0);
     }
 
     private void wipeCommit(APDU apdu) {
         apdu.setIncomingAndReceive();
-        byte[] buf = apdu.getBuffer();
-        short offData = apdu.getOffsetCdata();
-        short lc = apdu.getIncomingLength();
 
+        // unset mseed
         Util.arrayFillNonAtomic(mseed, (short) 0, MSEED_SIZE, (byte) 0);
         mseedInitialized = false;
 
-        if (lc > LABEL_SIZE_MAX) {
-            display.failedScreen(scratch515, (short) 0);
-            display.homeScreen(scratch515, (short) 0);
-            ISOException.throwIt(SW_CONDITIONS_NOT_SATISFIED);
-        }
+        // set label
         labelLength = Util.arrayCopyNonAtomic(commandBuffer80, (short) 2, label, (short) 0, commandBuffer80[1]);
 
-        if (commandBuffer80[0] == 0)// main wallet
-        {
+        // main wallet
+        if (commandBuffer80[0] == 0) {
             do {
                 // entropy => mseed
                 randomData.generateData(mseed, (short) 0, MSEED_SIZE);
             } while (!bip.bip32GenerateMasterKey(mseed, (short) 0, MSEED_SIZE, main500, (short) 0));
             mseedInitialized = true;
-
-            display.successfulScreen(scratch515, (short) 0);
-            display.homeScreen(scratch515, (short) 0);
-        } else if (commandBuffer80[0] == 1) // backup wallet
-        {
+        }
+        // backup wallet
+        else if (commandBuffer80[0] == 1) {
+            // generate tk
             transportKey.getPrivate().clearKey();
-
             Secp256k1.setCommonCurveParameters(((ECPrivateKey) transportKey.getPrivate()));
             Secp256k1.setCommonCurveParameters(((ECPublicKey) transportKey.getPublic()));
             transportKey.genKeyPair();
 
+            // calculate vcode1
             short publicKeyLength = ((ECPublicKey) transportKey.getPublic()).getW(main500, (short) 0);
-
-            vcode[0] = (byte) generateVCode(main500, (short) 0, publicKeyLength, vcode, (short) 1);
-
-            // Set the PIN to a unusable random value
-            randomData.generateData(scratch515, (short) 0, PIN_SIZE);
-            pin.update(scratch515, (short) 0, PIN_SIZE);
-            pin.resetAndUnblock();
-
-            generateRandomPin(scratch515, (short) 0);
-            scratch515[0] = '1';
-            scratch515[1] = '2';
-            scratch515[2] = '3';
-            scratch515[3] = '4';
-            tempPin.update(scratch515, (short) 0, PIN_SIZE);
-            tempPin.resetAndUnblock();
-
-            display.setPinScreen(randomPin, (short) 0, (short) (randomPin.length), scratch515, (short) 0);
-
-            noPin = true;
+            vcode1[0] = (byte) generateVCode(main500, (short) 0, publicKeyLength, vcode1, (short) 1);
 
             apdu.setOutgoing();
             apdu.setOutgoingLength(publicKeyLength);
@@ -357,53 +344,65 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
         } else {
             display.failedScreen(scratch515, (short) 0);
-            display.homeScreen(scratch515, (short) 0);
             ISOException.throwIt(SW_DATA_INVALID);
         }
+
+        // unset PIN
+        randomData.generateData(scratch515, (short) 0, PIN_SIZE);
+        pin.update(scratch515, (short) 0, PIN_SIZE);
+        pin.resetAndUnblock();
+        noPin = true;
+
+        // display random buttons
+        generateRandomButtons(scratch515, (short) 0);
+        display.setPinScreen(randomButtons, (short) 0, (short) (randomButtons.length), scratch515, (short) 0);
     }
 
     private void processSetPIN(APDU apdu) {
         apdu.setIncomingAndReceive();
         byte[] buf = apdu.getBuffer();
         short lc = apdu.getIncomingLength();
+
+        if (noPin == false) {
+            display.failedScreen(scratch515, (short) 0);
+            ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);
+        }
+
         if (lc != PIN_SIZE) {
             display.failedScreen(scratch515, (short) 0);
-            display.homeScreen(scratch515, (short) 0);
             ISOException.throwIt(SW_WRONG_LENGTH);
         }
 
-        if (commandLock != CL_SET_PIN)// first call
-        {
-            decodeRandomPin(buf, OFFSET_CDATA, scratch515, (short) 0);
+        decodeRandomButtons(buf, OFFSET_CDATA, scratch515, (short) 0);
+
+        // first call, set PIN
+        if (commandLock != CL_SET_PIN) {
             tempPin.update(scratch515, (short) 0, PIN_SIZE);
             tempPin.resetAndUnblock();
 
-            generateRandomPin(scratch515, (short) 0);
-            display.setPinScreen(randomPin, (short) 0, (short) (randomPin.length), scratch515, (short) 0);
+            generateRandomButtons(scratch515, (short) 0);
+            display.setPinScreen(randomButtons, (short) 0, (short) (randomButtons.length), scratch515, (short) 0);
             commandLock = CL_SET_PIN;
-        } else // second call
-        {
+        }
+        // second call, confirm PIN
+        else {
             commandLock = CL_NONE;
-            decodeRandomPin(buf, OFFSET_CDATA, scratch515, (short) 0);
-
             if (tempPin.check(scratch515, (short) 0, PIN_SIZE) == false) {
                 pin.update(scratch515, (short) 0, PIN_SIZE);
                 pin.resetAndUnblock();
                 noPin = false;
                 display.successfulScreen(scratch515, (short) 0);
-                if (vcode[0] != 0) {
-                    display.backup1Screen(vcode, (short) 1, vcode[0], scratch515, (short) 0);
+                if (vcode1[0] != 0) {
+                    display.backup1Screen(vcode1, (short) 1, vcode1[0], scratch515, (short) 0);
+                    vcode1[0] = 0;
                 } else {
                     display.homeScreen(scratch515, (short) 0);
                 }
             } else {
                 display.failedScreen(scratch515, (short) 0);
-                display.homeScreen(scratch515, (short) 0);
                 ISOException.throwIt(SW_DATA_INVALID);
             }
-
         }
-
     }
 
     private void processChangePIN(APDU apdu) {
