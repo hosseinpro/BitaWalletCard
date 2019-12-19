@@ -1,6 +1,7 @@
 // Version: 1.8
 
 const sha = require("jssha");
+const Base64 = require("../src/Base64.js");
 
 module.exports = class BitaWalletCard {
   constructor(cardreaderTransmit) {
@@ -597,6 +598,22 @@ module.exports = class BitaWalletCard {
     let responseAPDU = await this.transmit(apduSignTx);
     const signedTx = responseAPDU.data;
     return { signedTx };
+  }
+
+  async testPicoLabel(epdBase64) {
+    let apdu = "00 A4 04 00 05 0102030405 00";
+    await this.transmit(apdu);
+    apdu = "12 000000";
+    await this.transmit(apdu);
+    const epdHex = Base64.base64ToHex(epdBase64);
+    for (let i = 0; i < epdHex.length; i += 492) {
+      let chunk = epdHex.substr(i, 492);
+      let len = BitaWalletCard.padHex((chunk.length / 2).toString(16), 2);
+      apdu = "B5 20 04 00" + len + chunk;
+      await this.transmit(apdu);
+    }
+    apdu = "B5 24 10 00 00";
+    await this.transmit(apdu);
   }
 
   async cancel() {
