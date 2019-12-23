@@ -27,8 +27,9 @@ let spend;
 let fee;
 
 var recursiveAsyncReadLine = function() {
-  rl.question("> ", function(answer) {
+  rl.question("> ", async function(answer) {
     const inputs = answer.split(" ");
+    let response = "";
     switch (inputs[0]) {
       case "test":
         console.log("command apdu chaining test:");
@@ -94,11 +95,6 @@ var recursiveAsyncReadLine = function() {
         connect("0");
         setTimeout(() => {
           bitaWalletCard.selectApplet();
-          setTimeout(() => {
-            bitaWalletCard.verifyPIN("1234").catch(err => {
-              print(err);
-            });
-          }, 500);
         }, 500);
         break;
       case "listreaders":
@@ -115,45 +111,34 @@ var recursiveAsyncReadLine = function() {
         disconnect();
         break;
       case "transmit": //apdu
-        bitaWalletCard.transmit(inputs[1], responseAPDU => {
-          console.log(responseAPDU.data);
-        });
+        response = await bitaWalletCard.transmit(inputs[1]);
+        console.log(response.data);
         break;
       case "selectapplet":
         let log = "";
-        bitaWalletCard.selectApplet().then(() => {
-          bitaWalletCard.getSerialNumber().then(res => {
-            log += "SN: " + res.serialNumber;
-            bitaWalletCard.getVersion().then(res => {
-              log += " | Type: " + res.type + " | Version: " + res.version;
-              print(log);
-            });
-          });
-        });
+        await bitaWalletCard.selectApplet();
+        response = await bitaWalletCard.getInfo();
+        log += "SN: " + response.serialNumber;
+        log += " | Version: " + response.version;
+        log += " | Label: " + response.label;
+        print(log);
         break;
       case "requestwipe":
         bitaWalletCard.requestWipe().catch(err => {
           print(err);
         });
         break;
-      case "wipe": //yesCode, newPIN, newLabel, genMasterSeed
-        let genMasterSeed = false;
-        inputs[4] === "true" ? (genMasterSeed = true) : (genMasterSeed = false);
-        bitaWalletCard
-          .wipe(inputs[1], inputs[2], inputs[3], genMasterSeed)
-          .catch(err => {
-            print(err);
-          });
+      case "wipe": //wipeType(main, backup, mseed), label, masterSeed
+        await bitaWalletCard.wipe(inputs[1], inputs[2], inputs[3]);
         break;
       case "verifypin": //pin
-        bitaWalletCard.verifyPIN(inputs[1]).catch(err => {
-          print(err);
-        });
+        await bitaWalletCard.verifyPIN(inputs[1]);
         break;
-      case "changepin": //newPin
-        bitaWalletCard.changePIN(inputs[1]).catch(err => {
-          print(err);
-        });
+      case "setpin": //newPin
+        await bitaWalletCard.setPIN(inputs[1]);
+        break;
+      case "changepin":
+        await bitaWalletCard.changePIN(inputs[1]);
         break;
       case "getlabel":
         bitaWalletCard.getLabel().catch(err => {
@@ -377,7 +362,7 @@ function print(message) {
 }
 
 function completer(line) {
-  const completions = "test testpicolabel boot listreaders connect disconnect transmit selectapplet requestwipe wipe verifypin changepin getlabel setlabel importmasterseedplain generatemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getxpub getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
+  const completions = "test testpicolabel boot listreaders connect disconnect transmit selectapplet wipe verifypin setpin changepin getlabel setlabel importmasterseedplain generatemasterseed requestexportmasterseed exportmasterseed importmasterseed getaddresslist getxpub getsubwalletaddresslist settxinput requestgeneratesubwallettx generatesubwallettx requestexportsubwallet exportsubwallet generatetransportkey importtransportkeypublic requestsigntx signtx exit".split(
     " "
   );
   const hits = completions.filter(c => c.startsWith(line));

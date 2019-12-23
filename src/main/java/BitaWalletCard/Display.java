@@ -1,9 +1,9 @@
 package BitaWalletCard;
 
 import javacard.framework.*;
+import javacard.security.*;
+
 import com.es.specialmethod.ESUtil;
-// import com.es.specialmethod.ESComm;
-// import com.es.specialmethod.method;
 
 public class Display {
 
@@ -15,35 +15,42 @@ public class Display {
 
 	private static final short MAX_IMG_DATA_EACH_PKT = (short) 240;
 
-	// private static final byte MSG_HOME[] = { ' ', ' ', ' ', 'B', 'i', 't', 'a',
-	// 'W', 'a', 'l', 'l', 'e', 't' };
-	private static final byte MSG_HOME[] = { ' ', ' ', ' ', 'X', 'e', 'b', 'a', 'W', 'a', 'l', 'l', 'e', 't' };
-	private static final byte MSG_SUCCESSFUL[] = { ' ', ' ', ' ', 'S', 'u', 'c', 'c', 'e', 's', 's', 'f', 'u', 'l' };
-	private static final byte MSG_FAILED[] = { ' ', ' ', ' ', ' ', ' ', 'F', 'a', 'i', 'l', 'e', 'd' };
-	private static final byte MSG_WIPE[] = { ' ', ' ', ' ', ' ', 'S', 'u', 'r', 'e', ' ', 't', 'o', NEWLINE, ' ', ' ',
-			' ', ' ', ' ', 'w', 'i', 'p', 'e', '?', '1', '2', '3', '4' };
-	private static final byte BTN_WIPE[] = { 'W', 'I', 'P', 'E', ':' };
-	private static final byte MSG_BACKUP[] = { ' ', ' ', ' ', ' ', 'S', 'u', 'r', 'e', ' ', 't', 'o', NEWLINE, ' ', ' ',
-			' ', ' ', 'b', 'a', 'c', 'k', 'u', 'p', '?' };
-	private static final byte BTN_BACKUP[] = { 'B', 'A', 'C', 'K', 'U', 'P', ':' };
-	private static final byte MSG_BACKUPKEY[] = { ' ', ' ', ' ', 'B', 'a', 'c', 'k', 'u', 'p', ' ', 'k', 'e', 'y' };
-	private static final byte MSG_VCODE[] = { ' ', ' ', ' ', 'v', 'c', 'o', 'd', 'e', ':' };
-	private static final byte BTN_SEND[] = { 'S', 'E', 'N', 'D', ':' };
+	public static final byte MSG_HOME[] = { ' ', ' ', ' ', 'X', 'e', 'b', 'a', 'W', 'a', 'l', 'l', 'e', 't' };
+	public static final byte MSG_SUCCESSFUL[] = { ' ', ' ', ' ', 'S', 'u', 'c', 'c', 'e', 's', 's', 'f', 'u', 'l' };
+	public static final byte MSG_FAILED[] = { ' ', ' ', ' ', ' ', ' ', 'F', 'a', 'i', 'l', 'e', 'd' };
+	public static final byte MSG_WIPE[] = { 'W', 'i', 'p', 'e', '?', ' ', 'E', 'n', 't', 'e', 'r', ' ', '1', '2', '3',
+			'4' };
+	public static final byte MSG_CURRENT_PIN[] = { 'E', 'n', 't', 'e', 'r', ' ', 'C', 'u', 'r', 'r', 'u', 'n', 't', ' ',
+			'P', 'I', 'N' };
+	public static final byte MSG_NEW_PIN[] = { 'E', 'n', 't', 'e', 'r', ' ', 'N', 'e', 'w', ' ', 'P', 'I', 'N' };
+	public static final byte MSG_CONFIRM_PIN[] = { 'C', 'o', 'n', 'f', 'i', 'r', 'm', ' ', 'N', 'e', 'w', ' ', 'P', 'I',
+			'N' };
+	public static final byte MSG_PIN[] = { 'E', 'n', 't', 'e', 'r', ' ', 'P', 'I', 'N' };
+	public static final byte MSG_IMPORT[] = { 'I', 'm', 'p', 'o', 'r', 't', ' ', 'v', 'c', 'o', 'd', 'e', '2', ':',
+			' ' };
+	public static final byte MSG_EXPORT[] = { 'I', 'm', 'p', 'o', 'r', 't', ' ', 'v', 'c', 'o', 'd', 'e', '1', ':',
+			' ' };
+	public static final byte MSG_VCODE1[] = { 'v', 'c', 'o', 'd', 'e', '1', ':' };
+	public static final byte MSG_VCODE2[] = { 'v', 'c', 'o', 'd', 'e', '2', ':' };
 	private static final byte MSG_TO[] = { 'T', 'o', ':' };
 	private static final byte MSG_BTC[] = { 'B', 'T', 'C' };
 	private static final byte MSG_FEE[] = { 'f', 'e', 'e' };
 	private static final byte MSG_MBTC[] = { 'm', 'B', 'T', 'C' };
 
 	private static ESUtil esUtil = null;
-	// public method esMethod;
-	// public static ESComm esComm;
+
+	private static final byte PIN_SIZE = 4;
+	public static final byte VCODE_SIZE = 4;
+	private static RandomData randomData;
+	public byte[] keypad;
+
+	private MessageDigest sha1;
 
 	public Display() {
 		esUtil = new ESUtil();
-		// esComm = new ESComm();
-		// esMethod = new method();
-		// esMethod.CommBuff = JCSystem.makeTransientByteArray((short) 300,
-		// JCSystem.CLEAR_ON_DESELECT);
+		randomData = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
+		keypad = JCSystem.makeTransientByteArray((short) 10, JCSystem.CLEAR_ON_DESELECT);
+		sha1 = MessageDigest.getInstance(MessageDigest.ALG_SHA, false);
 	}
 
 	public boolean initialize() {
@@ -68,118 +75,41 @@ public class Display {
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
-	public boolean successfulScreen(byte[] scratch, short scratchOffset) {
-		isHomeScreen = false;
-
-		short offset = (short) (scratchOffset + HEADER_SIZE);
-
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-
-		offset = Util.arrayCopyNonAtomic(MSG_SUCCESSFUL, (short) 0, scratch, offset, (short) MSG_SUCCESSFUL.length);
-
-		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
-	}
-
-	public boolean failedScreen(byte[] scratch, short scratchOffset) {
-		isHomeScreen = false;
-
-		short offset = (short) (scratchOffset + HEADER_SIZE);
-
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-
-		offset = Util.arrayCopyNonAtomic(MSG_FAILED, (short) 0, scratch, offset, (short) MSG_FAILED.length);
-
-		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
-	}
-
-	public boolean wipeScreen(byte[] randomPin, short randomPinOffset, short randomPinLength, byte[] scratch,
+	public boolean message(byte[] message, short messageOffset, short messageLength, byte[] scratch,
 			short scratchOffset) {
 		isHomeScreen = false;
-
 		short offset = (short) (scratchOffset + HEADER_SIZE);
-
-		offset = Util.arrayCopyNonAtomic(MSG_WIPE, (short) 0, scratch, offset, (short) MSG_WIPE.length);
-
-		scratch[offset++] = NEWLINE;
-
-		offset = fillKeyPad(randomPin, randomPinOffset, randomPinLength, scratch, offset);
-
+		offset = Util.arrayCopyNonAtomic(message, messageOffset, scratch, scratchOffset, messageLength);
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
-	public boolean backup1Screen(byte[] vcode, short vcodeOffset, short vcodeLength, byte[] scratch,
+	public boolean messageWithKeypad(byte[] message, short messageOffset, short messageLength, byte[] scratch,
 			short scratchOffset) {
 		isHomeScreen = false;
-
 		short offset = (short) (scratchOffset + HEADER_SIZE);
-
+		offset = Util.arrayCopyNonAtomic(message, messageOffset, scratch, scratchOffset, messageLength);
 		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-
-		offset = Util.arrayCopyNonAtomic(MSG_BACKUPKEY, (short) 0, scratch, offset, (short) MSG_BACKUPKEY.length);
-		scratch[offset++] = NEWLINE;
-
-		scratch[offset++] = NEWLINE;
-
-		offset = Util.arrayCopyNonAtomic(MSG_VCODE, (short) 0, scratch, offset, (short) MSG_VCODE.length);
-
-		offset = Util.arrayCopyNonAtomic(vcode, vcodeOffset, scratch, offset, vcodeLength);
-
+		generateKeypad();
+		offset = fillKeypad(keypad, (short) 0, (short) keypad.length, scratch, offset);
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
-	public boolean backup2Screen(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] vcode,
-			short vcodeOffset, short vcodeLength, byte[] scratch, short scratchOffset) {
-		isHomeScreen = false;
+	public short generateSignMessage(byte[] amount, short amountOffset, short amountLength, byte[] fee, short feeOffset,
+			short feeLength, byte[] destAddress, short destAddressOffset, short destAddressLength, byte[] output,
+			short outputOffset, byte[] scratch40, short scratchOffset) {
 
-		short offset = (short) (scratchOffset + HEADER_SIZE);
+		toDecimalString(amount, amountOffset, amountLength, scratch40, scratchOffset, scratch40,
+				(short) (scratchOffset + 20));
+		short offset = satoshi2BTC(scratch40, (short) (scratchOffset + 10), output, outputOffset);
+		output[offset++] = SPACE;
+		offset = Util.arrayCopyNonAtomic(MSG_BTC, (short) 0, output, offset, (short) MSG_BTC.length);
+		output[offset++] = NEWLINE;
 
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
+		offset = Util.arrayCopyNonAtomic(MSG_TO, (short) 0, output, offset, (short) MSG_TO.length);
 
-		offset = Util.arrayCopyNonAtomic(MSG_BACKUP, (short) 0, scratch, offset, (short) MSG_BACKUP.length);
-		scratch[offset++] = NEWLINE;
-
-		scratch[offset++] = NEWLINE;
-
-		offset = Util.arrayCopyNonAtomic(MSG_VCODE, (short) 0, scratch, offset, (short) MSG_VCODE.length);
-
-		offset = Util.arrayCopyNonAtomic(vcode, vcodeOffset, scratch, offset, vcodeLength);
-
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-
-		offset = Util.arrayCopyNonAtomic(BTN_BACKUP, (short) 0, scratch, offset, (short) BTN_BACKUP.length);
-
-		offset = Util.arrayCopyNonAtomic(yescode, yescodeOffset, scratch, offset, yescodeLength);
-
-		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
-	}
-
-	public boolean sendScreen(byte[] yescode, short yescodeOffset, short yescodeLength, byte[] amount,
-			short amountOffset, short amountLength, byte[] fee, short feeOffset, short feeLength, byte[] destAddress,
-			short destAddressOffset, short destAddressLength, byte[] scratch, short scratchOffset) {
-		isHomeScreen = false;
-
-		short offset = (short) (scratchOffset + HEADER_SIZE);
-
-		toDecimalString(amount, amountOffset, amountLength, scratch, (short) (offset + 10), scratch,
-				(short) (offset + 30));
-		offset += satoshi2BTC(scratch, (short) (offset + 10), scratch, offset);
-		scratch[offset++] = SPACE;
-		offset = Util.arrayCopyNonAtomic(MSG_BTC, (short) 0, scratch, offset, (short) MSG_BTC.length);
-		scratch[offset++] = NEWLINE;
-
-		offset = Util.arrayCopyNonAtomic(MSG_TO, (short) 0, scratch, offset, (short) MSG_TO.length);
-
-		offset += Base58.encode(destAddress, destAddressOffset, destAddressLength, scratch, offset, scratch,
-				(short) (offset + 50));
-		scratch[offset++] = NEWLINE;
+		offset += Base58.encode(destAddress, destAddressOffset, destAddressLength, output, offset, scratch40,
+				outputOffset);
+		output[offset++] = NEWLINE;
 
 		// toDecimalString(fee, feeOffset, feeLength, scratch, (short) (offset + 6));//
 		// temp use of scratch
@@ -192,15 +122,41 @@ public class Display {
 		// MSG_FEE.length);
 		// scratch[offset++] = NEWLINE;
 
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
-		scratch[offset++] = NEWLINE;
+		return offset;
+	}
 
-		offset = Util.arrayCopyNonAtomic(BTN_SEND, (short) 0, scratch, offset, (short) BTN_SEND.length);
+	private void generateKeypad() {
 
-		offset = Util.arrayCopyNonAtomic(yescode, yescodeOffset, scratch, offset, yescodeLength);
+		for (short i = 0; i < (short) 10; i++) {
+			keypad[i] = (byte) (i + (short) 0x30);
+		}
 
-		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
+		byte[] temp = new byte[1];
+
+		for (short i = 0; i < (short) 7; i++) {
+			do {
+				randomData.generateData(temp, (short) 0, (short) 1);
+			} while (temp[(short) 0] < 0);
+			short index1 = (short) (temp[(short) 0] % (short) 10);
+
+			do {
+				randomData.generateData(temp, (short) 0, (short) 1);
+			} while (temp[(short) 0] < 0);
+			short index2 = (short) (temp[(short) 0] % (short) 10);
+
+			byte soap = keypad[index1];
+			keypad[index1] = keypad[index2];
+			keypad[index2] = soap;
+		}
+	}
+
+	public void decodeKeypad(byte[] enteredButtons, short enteredButtonsOffset, byte[] decodedPin,
+			short decodedPinOffset) {
+
+		for (short i = 0; i < PIN_SIZE; i++) {
+			byte index = (byte) (enteredButtons[(short) (enteredButtonsOffset + i)] - (short) 0x30);
+			decodedPin[(short) (decodedPinOffset + i)] = keypad[index];
+		}
 	}
 
 	private static final byte MSG_KEYPAD[] = { ' ', ' ', ' ', '(', '1', ')', ' ', '(', '2', ')', ' ', '(', '3', ')',
@@ -208,41 +164,36 @@ public class Display {
 			' ', '(', '7', ')', ' ', '(', '8', ')', ' ', '(', '9', ')', (byte) 0x0A, ' ', ' ', ' ', ' ', ' ', ' ', ' ',
 			'(', '0', ')', ' ', ' ', ' ', ' ' };// len=59
 
-	private short fillKeyPad(byte[] randomPin, short randomPinOffset, short randomPinLength, byte[] scratch59,
+	private short fillKeypad(byte[] keypad, short keypadOffset, short keypadLength, byte[] scratch59,
 			short scratchOffset) {
 		short offset = scratchOffset;
 		short otpBegin = offset;
 		offset = Util.arrayCopyNonAtomic(MSG_KEYPAD, (short) 0, scratch59, offset, (short) MSG_KEYPAD.length);
-		scratch59[(short) (otpBegin + 4)] = randomPin[(short) (randomPinOffset + 1)];
-		scratch59[(short) (otpBegin + 8)] = randomPin[(short) (randomPinOffset + 2)];
-		scratch59[(short) (otpBegin + 12)] = randomPin[(short) (randomPinOffset + 3)];
-		scratch59[(short) (otpBegin + 19)] = randomPin[(short) (randomPinOffset + 4)];
-		scratch59[(short) (otpBegin + 23)] = randomPin[(short) (randomPinOffset + 5)];
-		scratch59[(short) (otpBegin + 27)] = randomPin[(short) (randomPinOffset + 6)];
-		scratch59[(short) (otpBegin + 34)] = randomPin[(short) (randomPinOffset + 7)];
-		scratch59[(short) (otpBegin + 38)] = randomPin[(short) (randomPinOffset + 8)];
-		scratch59[(short) (otpBegin + 42)] = randomPin[(short) (randomPinOffset + 9)];
-		scratch59[(short) (otpBegin + 53)] = randomPin[(short) (randomPinOffset + 0)];
+		scratch59[(short) (otpBegin + 4)] = keypad[(short) (keypadOffset + 1)];
+		scratch59[(short) (otpBegin + 8)] = keypad[(short) (keypadOffset + 2)];
+		scratch59[(short) (otpBegin + 12)] = keypad[(short) (keypadOffset + 3)];
+		scratch59[(short) (otpBegin + 19)] = keypad[(short) (keypadOffset + 4)];
+		scratch59[(short) (otpBegin + 23)] = keypad[(short) (keypadOffset + 5)];
+		scratch59[(short) (otpBegin + 27)] = keypad[(short) (keypadOffset + 6)];
+		scratch59[(short) (otpBegin + 34)] = keypad[(short) (keypadOffset + 7)];
+		scratch59[(short) (otpBegin + 38)] = keypad[(short) (keypadOffset + 8)];
+		scratch59[(short) (otpBegin + 42)] = keypad[(short) (keypadOffset + 9)];
+		scratch59[(short) (otpBegin + 53)] = keypad[(short) (keypadOffset + 0)];
 		return offset;
 	}
 
-	public boolean setPinScreen(byte[] randomPin, short randomPinOffset, short randomPinLength, byte[] scratch66,
-			short scratchOffset) {
-		short offset = (short) (scratchOffset + 8);
-		short otpBegin = offset;
-		offset = Util.arrayCopyNonAtomic(MSG_KEYPAD, (short) 0, scratch66, offset, (short) MSG_KEYPAD.length);
-		scratch66[(short) (otpBegin + 4)] = randomPin[(short) (randomPinOffset + 1)];
-		scratch66[(short) (otpBegin + 8)] = randomPin[(short) (randomPinOffset + 2)];
-		scratch66[(short) (otpBegin + 12)] = randomPin[(short) (randomPinOffset + 3)];
-		scratch66[(short) (otpBegin + 19)] = randomPin[(short) (randomPinOffset + 4)];
-		scratch66[(short) (otpBegin + 23)] = randomPin[(short) (randomPinOffset + 5)];
-		scratch66[(short) (otpBegin + 27)] = randomPin[(short) (randomPinOffset + 6)];
-		scratch66[(short) (otpBegin + 34)] = randomPin[(short) (randomPinOffset + 7)];
-		scratch66[(short) (otpBegin + 38)] = randomPin[(short) (randomPinOffset + 8)];
-		scratch66[(short) (otpBegin + 42)] = randomPin[(short) (randomPinOffset + 9)];
-		scratch66[(short) (otpBegin + 53)] = randomPin[(short) (randomPinOffset + 0)];
+	public short generateVCode(byte[] data, short dataOffset, short dataLength, byte[] vcode, short vcodeOffset,
+			byte[] scratch70, short scratchOffset) {
+		sha1.reset();
+		short offset = scratchOffset;
+		short sha1Len = sha1.doFinal(data, dataOffset, dataLength, scratch70, offset);
+		offset += sha1Len;
 
-		return displayText(scratch66, scratchOffset, (short) (offset - scratchOffset));
+		offset += Base58.encode(scratch70, scratchOffset, sha1Len, scratch70, offset, scratch70, (short) (offset + 50));
+
+		// copy last 4 chars
+		Util.arrayCopyNonAtomic(scratch70, (short) (offset - VCODE_SIZE), vcode, vcodeOffset, VCODE_SIZE);
+		return (short) 4;
 	}
 
 	private static final byte[] BYTES_TO_DECIMAL_SIZE = { 0, 3, 5, 8, 10, 13, 15, 17, 20, 22, 25, 27, 29, 32, 34, 37,
@@ -322,6 +273,9 @@ public class Display {
 
 	public boolean displayText(byte[] inBuff, short inOffset, short inLength) {
 
+		String message = new String(inBuff, inOffset, inLength);
+		java.lang.System.out.println(message);
+
 		esUtil.clearScreen();
 
 		short dataLength = (short) (inLength - 8);
@@ -338,62 +292,5 @@ public class Display {
 		inBuff[offset++] = (byte) (dataLength & (short) 0x00FF); // Text length
 
 		return esUtil.displayText(inBuff, inOffset, inLength);
-	}
-
-	private void displayImage(byte[] inBuff, short inOffset, short inLength, byte[] scratch300, short scratchOffset) {
-
-		// esMethod = new method();
-		// esMethod.CommBuff = JCSystem.makeTransientByteArray((short) 300,
-		// JCSystem.CLEAR_ON_DESELECT);
-
-		byte result;
-		short ImgDataReadIndex, ImgCntCurrPkt, ImgCntLeft, PktPayloadSize;
-		byte[] resp = new byte[20];
-		byte LastPkt;
-
-		ImgCntLeft = (short) (inLength - 10);
-		ImgDataReadIndex = (short) (inOffset + 10);
-
-		while (true) {
-			LastPkt = (ImgCntLeft <= MAX_IMG_DATA_EACH_PKT) ? (byte) 1 : (byte) 0;
-			ImgCntCurrPkt = (LastPkt == (byte) 1) ? ImgCntLeft : MAX_IMG_DATA_EACH_PKT;
-
-			if (ImgDataReadIndex == (short) (inOffset + 10)) // first packet
-			{
-				scratch300[scratchOffset] = 0x21;
-				scratch300[(short) (scratchOffset + 1)] = 0x02;
-				scratch300[(short) (scratchOffset + 2)] = (byte) ((LastPkt << 1) | 1); // link type (last packet | first
-																						// packet)
-
-				PktPayloadSize = (short) (ImgCntCurrPkt + 13);
-				Util.arrayCopyNonAtomic(inBuff, inOffset, scratch300, (short) (scratchOffset + 3),
-						(short) (ImgCntCurrPkt + 10));
-			} else {
-				scratch300[scratchOffset] = 0x21;
-				scratch300[(short) (scratchOffset + 1)] = 0x02;
-				scratch300[(short) (scratchOffset + 2)] = (byte) ((LastPkt << 1) | 0); // link type
-				PktPayloadSize = (short) (ImgCntCurrPkt + 3);
-				Util.arrayCopyNonAtomic(inBuff, ImgDataReadIndex, scratch300, (short) (scratchOffset + 3),
-						ImgCntCurrPkt);
-			}
-
-			// result = esComm.sendAndReceiveData(PktBuf, (short) 0, PktPayloadSize, (short)
-			// 0xFFFF, resp, (short) 0,
-			// (short) 0xFFFF);
-
-			// result = esMethod.tcSendAndRecv(scratch300, scratchOffset, PktPayloadSize,
-			// resp, (short) 0);
-			// if (result != 0x00 && resp[0] != 0x00 && resp[1] != 0x02) {
-			// continue;
-			// }
-
-			ImgCntLeft -= ImgCntCurrPkt;
-			ImgDataReadIndex += ImgCntCurrPkt;
-
-			if (ImgCntLeft == 0) // get response for DisplayImage cmd
-			{
-				break;
-			}
-		}
 	}
 }
