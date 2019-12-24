@@ -6,8 +6,9 @@ import javacard.security.*;
 public class BIP {
 
     private static final byte BITCOIN_SEED[] = { 'B', 'i', 't', 'c', 'o', 'i', 'n', ' ', 's', 'e', 'e', 'd' };
-    private static final byte SUBWALLET_SEED[] = { 'S', 'u', 'b', 'w', 'a', 'l', 'l', 'e', 't', ' ', '0', '0', '0',
-            '0' };
+    // private static final byte SUBWALLET_SEED[] = { 'S', 'u', 'b', 'w', 'a', 'l',
+    // 'l', 'e', 't', ' ', '0', '0', '0',
+    // '0' };
 
     public static final short BTC = 0;
     public static final short TST = 1;
@@ -19,7 +20,7 @@ public class BIP {
     private Signature hmacSignature;
     private HMACKey hmacMasterKey;
     private HMACKey hmacDerivedKey;
-    private HMACKey hmacSubWallet;
+    // private HMACKey hmacSubWallet;
     private KeyAgreement ecMultiplyHelper;
     private ECPrivateKey ecPrivateKeyTemp;
 
@@ -30,8 +31,9 @@ public class BIP {
                 KeyBuilder.LENGTH_HMAC_SHA_512_BLOCK_128, false);
         hmacDerivedKey = (HMACKey) KeyBuilder.buildKey(KeyBuilder.TYPE_HMAC_TRANSIENT_DESELECT,
                 KeyBuilder.LENGTH_HMAC_SHA_512_BLOCK_128, false);
-        hmacSubWallet = (HMACKey) KeyBuilder.buildKey(KeyBuilder.TYPE_HMAC_TRANSIENT_DESELECT,
-                KeyBuilder.LENGTH_HMAC_SHA_512_BLOCK_128, false);
+        // hmacSubWallet = (HMACKey)
+        // KeyBuilder.buildKey(KeyBuilder.TYPE_HMAC_TRANSIENT_DESELECT,
+        // KeyBuilder.LENGTH_HMAC_SHA_512_BLOCK_128, false);
         ecMultiplyHelper = KeyAgreement.getInstance(ALG_EC_SVDP_DH_PLAIN_XY, false);
         ecPrivateKeyTemp = (ECPrivateKey) KeyBuilder.buildKey(KeyBuilder.TYPE_EC_FP_PRIVATE,
                 KeyBuilder.LENGTH_EC_FP_256, false);
@@ -80,29 +82,33 @@ public class BIP {
         return resultLen;
     }
 
-    private boolean checkAddress(short coin, byte[] addressHex, short addressOffset, short addressLength,
-            byte[] scratch64, short scratchOffset) {
-        switch (coin) {
-        case BTC:
-        case TST:
-            if ((addressLength != 25) || (addressHex[addressOffset] != 0x00)) {
-                return false;
-            }
+    // private boolean checkAddress(short coin, byte[] addressHex, short
+    // addressOffset, short addressLength,
+    // byte[] scratch64, short scratchOffset) {
+    // switch (coin) {
+    // case BTC:
+    // case TST:
+    // if ((addressLength != 25) || (addressHex[addressOffset] != 0x00)) {
+    // return false;
+    // }
 
-            sha256.reset();
-            sha256.doFinal(addressHex, addressOffset, (short) 21, scratch64, scratchOffset);
-            sha256.reset();
-            sha256.doFinal(scratch64, scratchOffset, (short) 32, scratch64, (short) (scratchOffset + 32));
+    // sha256.reset();
+    // sha256.doFinal(addressHex, addressOffset, (short) 21, scratch64,
+    // scratchOffset);
+    // sha256.reset();
+    // sha256.doFinal(scratch64, scratchOffset, (short) 32, scratch64, (short)
+    // (scratchOffset + 32));
 
-            if (Util.arrayCompare(addressHex, addressOffset, scratch64, (short) (scratchOffset + 32),
-                    (short) 32) != 0) {
-                return false;
-            }
-            return true;
-        default:
-            return false;
-        }
-    }
+    // if (Util.arrayCompare(addressHex, addressOffset, scratch64, (short)
+    // (scratchOffset + 32),
+    // (short) 32) != 0) {
+    // return false;
+    // }
+    // return true;
+    // default:
+    // return false;
+    // }
+    // }
 
     public boolean bip32GenerateMasterKey(byte[] seed, short seedOffset, short seedLength, byte[] kcPar,
             short kcParOffset) {
@@ -290,25 +296,31 @@ public class BIP {
         return (short) (offset - xpubOffset);
     }
 
-    private void decToHexString4(short decimal, byte[] hexString, short hexStringOffset) {
-        short t = decimal;
-        for (short i = 0; i < 4; i++) {
-            hexString[(short) (hexStringOffset + i)] = (byte) ((t % 10) + 0x30);
-            t = (short) (t / 10);
-        }
-    }
+    // private void decToHexString4(short decimal, byte[] hexString, short
+    // hexStringOffset) {
+    // short t = decimal;
+    // for (short i = 0; i < 4; i++) {
+    // hexString[(short) (hexStringOffset + i)] = (byte) ((t % 10) + 0x30);
+    // t = (short) (t / 10);
+    // }
+    // }
 
-    public short generateSubwalletSeed(byte[] masterSeed, short masterSeedOffset, short masterSeedLength,
-            short subwalletNumber, byte[] subwalletSeed, short subwalletSeedOffset, byte[] scratch14,
-            short scratchOffset) {
-        // HMAC-SHA512(key="Subwallet XXXX", data=mseed) => subwalletSeed
-        Util.arrayCopyNonAtomic(SUBWALLET_SEED, (short) 0, scratch14, scratchOffset, (short) SUBWALLET_SEED.length);
-        decToHexString4(subwalletNumber, scratch14, (short) (scratchOffset + 10));
+    // public short generateSubwalletSeed(byte[] masterSeed, short masterSeedOffset,
+    // short masterSeedLength,
+    // short subwalletNumber, byte[] subwalletSeed, short subwalletSeedOffset,
+    // byte[] scratch14,
+    // short scratchOffset) {
+    // // HMAC-SHA512(key="Subwallet XXXX", data=mseed) => subwalletSeed
+    // Util.arrayCopyNonAtomic(SUBWALLET_SEED, (short) 0, scratch14, scratchOffset,
+    // (short) SUBWALLET_SEED.length);
+    // decToHexString4(subwalletNumber, scratch14, (short) (scratchOffset + 10));
 
-        hmacSubWallet.setKey(scratch14, scratchOffset, (short) SUBWALLET_SEED.length);
-        hmacSignature.init(hmacSubWallet, Signature.MODE_SIGN);
-        short subwalletSeedLength = hmacSignature.sign(masterSeed, masterSeedOffset, masterSeedLength, subwalletSeed,
-                subwalletSeedOffset);
-        return subwalletSeedLength;
-    }
+    // hmacSubWallet.setKey(scratch14, scratchOffset, (short)
+    // SUBWALLET_SEED.length);
+    // hmacSignature.init(hmacSubWallet, Signature.MODE_SIGN);
+    // short subwalletSeedLength = hmacSignature.sign(masterSeed, masterSeedOffset,
+    // masterSeedLength, subwalletSeed,
+    // subwalletSeedOffset);
+    // return subwalletSeedLength;
+    // }
 }

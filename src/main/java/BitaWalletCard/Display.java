@@ -79,7 +79,7 @@ public class Display {
 			short scratchOffset) {
 		isHomeScreen = false;
 		short offset = (short) (scratchOffset + HEADER_SIZE);
-		offset = Util.arrayCopyNonAtomic(message, messageOffset, scratch, scratchOffset, messageLength);
+		offset = Util.arrayCopyNonAtomic(message, messageOffset, scratch, offset, messageLength);
 		return displayText(scratch, scratchOffset, (short) (offset - scratchOffset));
 	}
 
@@ -87,7 +87,7 @@ public class Display {
 			short scratchOffset) {
 		isHomeScreen = false;
 		short offset = (short) (scratchOffset + HEADER_SIZE);
-		offset = Util.arrayCopyNonAtomic(message, messageOffset, scratch, scratchOffset, messageLength);
+		offset = Util.arrayCopyNonAtomic(message, messageOffset, scratch, offset, messageLength);
 		scratch[offset++] = NEWLINE;
 		generateKeypad();
 		offset = fillKeypad(keypad, (short) 0, (short) keypad.length, scratch, offset);
@@ -98,9 +98,9 @@ public class Display {
 			short feeLength, byte[] destAddress, short destAddressOffset, short destAddressLength, byte[] output,
 			short outputOffset, byte[] scratch40, short scratchOffset) {
 
-		toDecimalString(amount, amountOffset, amountLength, scratch40, scratchOffset, scratch40,
+		short decLength = toDecimalString(amount, amountOffset, amountLength, scratch40, scratchOffset, scratch40,
 				(short) (scratchOffset + 20));
-		short offset = satoshi2BTC(scratch40, (short) (scratchOffset + 10), output, outputOffset);
+		short offset = satoshi2BTC(scratch40, scratchOffset, decLength, output, outputOffset);
 		output[offset++] = SPACE;
 		offset = Util.arrayCopyNonAtomic(MSG_BTC, (short) 0, output, offset, (short) MSG_BTC.length);
 		output[offset++] = NEWLINE;
@@ -108,7 +108,7 @@ public class Display {
 		offset = Util.arrayCopyNonAtomic(MSG_TO, (short) 0, output, offset, (short) MSG_TO.length);
 
 		offset += Base58.encode(destAddress, destAddressOffset, destAddressLength, output, offset, scratch40,
-				outputOffset);
+				scratchOffset);
 		output[offset++] = NEWLINE;
 
 		// toDecimalString(fee, feeOffset, feeLength, scratch, (short) (offset + 6));//
@@ -220,60 +220,44 @@ public class Display {
 		return decDigits;
 	}
 
-	private short satoshi2BTC(byte[] satoshi, short satoshiOffset, byte[] btc, short btcOffset) {
-		// original hex number length : 8B => satoshiLength : 20B
-		// 99.99999999 BTC
+	private short satoshi2BTC(byte[] satoshi, short satoshiOffset, short satoshiLength, byte[] btc, short btcOffset) {
+		// [5B:before point][8B: after point]
+		// 00000.00000000
+
+		// decimal number length must be 13
+		if (satoshiLength != 13)
+			return 0;
 
 		// remove left zeros
-		short startOffset = satoshiOffset;
-		short decimalLength = 12;
-		for (short i = satoshiOffset; i < (short) (satoshiOffset + 11); i++) {
-			if (satoshi[i] == 0x30) {
-				startOffset++;
-				decimalLength--;
+		// short startOffset = satoshiOffset;
+		short beforePointLength = 5;
+		for (short i = 0; i < 5 && (beforePointLength > 1); i++) {
+			if (satoshi[(short) (satoshiOffset + i)] == 0x30) {
+				beforePointLength--;
+			} else
+				break;
+		}
+
+		// remove right zeros
+		short afterPointLength = 8;
+		for (short i = (short) (satoshiLength - 1); i > 0 && afterPointLength > 1; i--) {
+			if (satoshi[(short) (satoshiOffset + i)] == 0x30) {
+				afterPointLength--;
 			} else
 				break;
 		}
 
 		short offset = btcOffset;
-		offset = Util.arrayCopyNonAtomic(satoshi, startOffset, btc, offset, decimalLength);
+		offset = Util.arrayCopyNonAtomic(satoshi, (short) (5 - beforePointLength + satoshiOffset), btc, offset,
+				beforePointLength);
 		btc[offset++] = '.';
-		offset = Util.arrayCopyNonAtomic(satoshi, (short) (satoshiOffset + 12), btc, offset, (short) 8);
-
-		// remove right zeros
-		short length = (short) (offset - btcOffset);
-		for (short i = (short) (length - 1); i >= 0; i--) {
-			if (btc[(short) (btcOffset + i)] != 0x30) {
-				length = (short) (i + 1);
-				break;
-			}
-		}
-		return length;
-	}
-
-	private short satoshi2mBTC(byte[] satoshi, short satoshiOffset, byte[] mbtc, short mbtcOffset) {
-		// original hex number length : 8B => satoshiLength : 20B
-		// 9.9999 mBTC
-
-		short offset = mbtcOffset;
-		offset = Util.arrayCopyNonAtomic(satoshi, (short) (satoshiOffset + 14), mbtc, offset, (short) 1);
-		mbtc[offset++] = '.';
-		offset = Util.arrayCopyNonAtomic(satoshi, (short) (satoshiOffset + 15), mbtc, offset, (short) 4);
-
-		// remove right zeros
-		short length = (short) (offset - mbtcOffset);
-		for (short i = (short) (length - 1); i >= 0; i--) {
-			if (mbtc[(short) (mbtcOffset + i)] != 0x30) {
-				length = (short) (i + 1);
-				break;
-			}
-		}
-		return length;
+		offset = Util.arrayCopyNonAtomic(satoshi, (short) (satoshiOffset + 5), btc, offset, afterPointLength);
+		return offset;
 	}
 
 	public boolean displayText(byte[] inBuff, short inOffset, short inLength) {
 
-		String message = new String(inBuff, inOffset, inLength);
+		String message = new String(inBuff, inOffset + 8, inLength - 8);
 		java.lang.System.out.println(message);
 
 		esUtil.clearScreen();

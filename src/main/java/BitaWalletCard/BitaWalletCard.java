@@ -183,13 +183,11 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             return;
         }
 
-        short offset = Util.arrayCopyNonAtomic(serialNumber, (short) 0, scratch515, (short) 0, SERIALNUMBER_SIZE);
-        offset = Util.arrayCopyNonAtomic(version, (short) 0, scratch515, offset, (short) version.length);
-        offset = Util.arrayCopyNonAtomic(label, (short) 0, scratch515, offset, labelLength);
+        short offset = Util.arrayCopyNonAtomic(serialNumber, (short) 0, main500, (short) 0, SERIALNUMBER_SIZE);
+        offset = Util.arrayCopyNonAtomic(version, (short) 0, main500, offset, (short) version.length);
+        offset = Util.arrayCopyNonAtomic(label, (short) 0, main500, offset, labelLength);
 
-        apdu.setOutgoing();
-        apdu.setOutgoingLength(offset);
-        apdu.sendBytesLong(scratch515, (short) 0, offset);
+        sendLongResponse(apdu, (short) 0, offset);
     }
 
     private void processVerifyPIN(APDU apdu) {
@@ -293,9 +291,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             short publicKeyLength = ((ECPublicKey) transportKey.getPublic()).getW(main500, (short) 0);
             display.generateVCode(main500, (short) 0, publicKeyLength, vcode1, (short) 0, scratch515, (short) 0);
 
-            apdu.setOutgoing();
-            apdu.setOutgoingLength(publicKeyLength);
-            apdu.sendBytesLong(main500, (short) 0, publicKeyLength);
+            sendLongResponse(apdu, (short) 0, publicKeyLength);
         }
         // main wallet with imported master seed
         else if (commandBuffer129[0] == 2) {
@@ -450,9 +446,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
                 (short) (offset + Display.VCODE_SIZE));
         display.message(scratch515, (short) 0, offset, scratch515, offset);
 
-        apdu.setOutgoing();
-        apdu.setOutgoingLength(packLen);
-        apdu.sendBytesLong(main500, (short) 0, packLen);
+        sendLongResponse(apdu, (short) 0, packLen);
     }
 
     private void processImportMasterSeed(APDU apdu) {
@@ -526,26 +520,38 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
     private void commitGetXPubs(APDU apdu) {
         short offset = 0;
-        for (short i = 1; i < commandBuffer129[0]; i += 5) {
-            offset += bip.bip44GetXPub(mseed, (short) 0, MSEED_SIZE, commandBuffer129, i, main500, offset, scratch515,
-                    (short) 0);
+        short commandBufferOffset = 1;
+        short count = commandBuffer129[0];
+        for (short i = 0; i < count; i++) {
+            offset += bip.bip44GetXPub(mseed, (short) 0, MSEED_SIZE, commandBuffer129, commandBufferOffset, main500,
+                    offset, scratch515, (short) 0);
+            commandBufferOffset += 5;
         }
 
         sendLongResponse(apdu, (short) 0, offset);
 
-        apdu.setOutgoing();
-        apdu.setOutgoingLength(offset);
-        apdu.sendBytesLong(main500, (short) 0, offset);
-
         display.homeScreen(scratch515, (short) 0);
     }
 
-    private short toBigEndian(byte[] leNumber, short leNumberOffset, byte[] beNumber, short beNumberOffset,
+    // private short toBigEndian(byte[] leNumber, short leNumberOffset, byte[]
+    // beNumber, short beNumberOffset,
+    // short length) {
+    // for (short i = 0; i < length; i++) {
+    // beNumber[(short) (beNumberOffset + length - 1 - i)] = leNumber[(short)
+    // (leNumberOffset + i)];
+    // }
+    // return (short) (beNumberOffset + length);
+    // }
+
+    private short toBigEndian8(byte[] leNumber, short leNumberOffset, byte[] beNumber, short beNumberOffset,
             short length) {
         for (short i = 0; i < length; i++) {
             beNumber[(short) (beNumberOffset + length - 1 - i)] = leNumber[(short) (leNumberOffset + i)];
         }
-        return (short) (beNumberOffset + length);
+        for (short i = length; i < 8; i++) {
+            beNumber[beNumberOffset + i] = 0x00;
+        }
+        return (short) (beNumberOffset + 8);
     }
 
     private short signTransaction(byte[] inputSection, short inputSectionOffset, byte[] signerKeyPaths,
@@ -658,10 +664,6 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     }
 
     private void processSignTransaction(APDU apdu) {
-        if (pin.isValidated() == false) {
-            ISOException.throwIt(SW_SECURITY_STATUS_NOT_SATISFIED);
-        }
-
         if (mseedInitialized == false) {
             ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);
         }
@@ -669,13 +671,19 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         Util.arrayCopyNonAtomic(buf, OFFSET_CDATA, commandBuffer129, (short) 0, lc);
 
         // commandBuffer
-        short spendIndex = 0; // 8B
-        short feeIndex = 8; // 8B
-        short destAddressIndex = 16; // 25B
+        short spendIndex = 0; // 5B
+        short feeIndex = 5; // 5B
+        short destAddressIndex = 10; // 25B
+        // short fundIndex = 35; // 5B
+        // short changeKeyPathIndex = 40; // 7B
+        // short inputSectionIndex = 47; // 1B + n*66B
+        // short inputCount = commandBuffer129[inputSectionIndex];
+        // short signerKeyPathsIndex = (short) (inputSectionIndex + 1 + (short)
+        // (inputCount * 66)); // n*7B
 
         // display random buttons
-        short length = display.generateSignMessage(commandBuffer129, spendIndex, (short) 8, commandBuffer129, feeIndex,
-                (short) 8, commandBuffer129, destAddressIndex, (short) 25, scratch515, (short) 0, scratch515,
+        short length = display.generateSignMessage(commandBuffer129, spendIndex, (short) 5, commandBuffer129, feeIndex,
+                (short) 5, commandBuffer129, destAddressIndex, (short) 25, scratch515, (short) 0, scratch515,
                 (short) 100);// 100?
         display.messageWithKeypad(scratch515, (short) 0, length, scratch515, length);
 
@@ -684,32 +692,30 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
     private void commitSignTransaction(APDU apdu) {
         // commandBuffer
-        short spendIndex = 0; // 8B
-        short feeIndex = 8; // 8B
-        short destAddressIndex = 16; // 25B
-
-        // buf
-        short fundIndex = (short) (offData + 4); // 8B
-        short changeKeyPathIndex = (short) (offData + 12); // 7B
-        short inputSectionIndex = (short) (offData + 19); // 1B + n*66B
-        short inputCount = buf[inputSectionIndex];
+        short spendIndex = 0; // 5B
+        short feeIndex = 5; // 5B
+        short destAddressIndex = 10; // 25B
+        short fundIndex = 35; // 5B
+        short changeKeyPathIndex = 40; // 7B
+        short inputSectionIndex = 47; // 1B + n*66B
+        short inputCount = commandBuffer129[inputSectionIndex];
         short signerKeyPathsIndex = (short) (inputSectionIndex + 1 + (short) (inputCount * 66)); // n*7B
 
         // build output section
         short moffset = 0;
         main500[moffset++] = 0x02;
         // spend value (big endian)
-        moffset = toBigEndian(commandBuffer129, spendIndex, main500, moffset, (short) 8);
+        moffset = toBigEndian8(commandBuffer129, spendIndex, main500, moffset, (short) 5);
         // P2SH dest pub key hash
         Util.arrayCopyNonAtomic(commandBuffer129, (short) (destAddressIndex + 1), P2PKH, (short) 4, (short) 20);
         moffset = Util.arrayCopyNonAtomic(P2PKH, (short) 0, main500, moffset, (short) (P2PKH.length));
         // change value (big endian) : change = fund - spend - fee;
-        MathMod256.sub(scratch515, (short) 0, buf, fundIndex, commandBuffer129, spendIndex, (short) 8);
-        MathMod256.sub(scratch515, (short) 0, scratch515, (short) 0, commandBuffer129, feeIndex, (short) 8);
-        moffset = toBigEndian(scratch515, (short) 0, main500, moffset, (short) 8);
+        MathMod256.sub(scratch515, (short) 0, commandBuffer129, fundIndex, commandBuffer129, spendIndex, (short) 5);
+        MathMod256.sub(scratch515, (short) 0, scratch515, (short) 0, commandBuffer129, feeIndex, (short) 5);
+        moffset = toBigEndian8(scratch515, (short) 0, main500, moffset, (short) 5);
         // P2SH change pub key hash
-        bip.bip44DerivePath(mseed, (short) 0, MSEED_SIZE, buf, changeKeyPathIndex, scratch515, (short) 0, (short) 1,
-                scratch515, (short) 32, scratch515, (short) 60);
+        bip.bip44DerivePath(mseed, (short) 0, MSEED_SIZE, commandBuffer129, changeKeyPathIndex, scratch515, (short) 0,
+                (short) 1, scratch515, (short) 32, scratch515, (short) 60);
         // addressList: 1B len + 25B address
         Util.arrayCopyNonAtomic(scratch515, (short) (32 + 1 + 1), P2PKH, (short) 4, (short) 20);
         moffset = Util.arrayCopyNonAtomic(P2PKH, (short) 0, main500, moffset, (short) (P2PKH.length));
@@ -717,8 +723,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         Util.arrayCopyNonAtomic(main500, (short) 0, scratch515, (short) 0, moffset);// moffset=69
 
         // build final Tx
-        short signedTxLength = signTransaction(buf, inputSectionIndex, buf, signerKeyPathsIndex, scratch515, (short) 0,
-                moffset, main500, (short) 0, scratch515, moffset);
+        short signedTxLength = signTransaction(commandBuffer129, inputSectionIndex, commandBuffer129,
+                signerKeyPathsIndex, scratch515, (short) 0, moffset, main500, (short) 0, scratch515, moffset);
 
         display.message(Display.MSG_SUCCESSFUL, (short) 0, (short) Display.MSG_SUCCESSFUL.length, scratch515,
                 (short) 0);
@@ -727,15 +733,15 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         sendLongResponse(apdu, (short) 0, signedTxLength);
     }
 
-    private void sendLongResponse(APDU apdu, short responseOffset1, short responseLength1) {
-        if (responseLength1 > (short) 250) {
-            responseOffset = responseOffset1;
-            responseRemainingLength = responseLength1;
+    private void sendLongResponse(APDU apdu, short responseOffset, short responseLength) {
+        if (responseLength > (short) 250) {
+            this.responseOffset = responseOffset;
+            this.responseRemainingLength = responseLength;
             ISOException.throwIt(SW_BYTES_REMAINING_00);
         } else {
             apdu.setOutgoing();
-            apdu.setOutgoingLength(responseLength1);
-            apdu.sendBytesLong(main500, responseOffset1, responseLength1);
+            apdu.setOutgoingLength(responseLength);
+            apdu.sendBytesLong(main500, responseOffset, responseLength);
         }
     }
 

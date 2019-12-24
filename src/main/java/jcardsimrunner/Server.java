@@ -61,6 +61,7 @@ public class Server {
                 System.out.println(">> " + cmd);
                 System.out.println("<< " + responseAPDU.toString());
                 response = bytes2Hex(responseAPDU.getBytes());
+                System.out.println("   " + response);
             }
             he.sendResponseHeaders(200, response.length());
             OutputStream os = he.getResponseBody();
