@@ -549,7 +549,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             beNumber[(short) (beNumberOffset + length - 1 - i)] = leNumber[(short) (leNumberOffset + i)];
         }
         for (short i = length; i < 8; i++) {
-            beNumber[beNumberOffset + i] = 0x00;
+            beNumber[(short) (beNumberOffset + i)] = 0x00;
         }
         return (short) (beNumberOffset + 8);
     }

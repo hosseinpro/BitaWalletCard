@@ -3,7 +3,7 @@ package BitaWalletCard;
 import javacard.framework.*;
 import javacard.security.*;
 
-import com.es.specialmethod.ESUtil;
+// import com.es.specialmethod.ESUtil;
 
 public class Display {
 
@@ -37,7 +37,7 @@ public class Display {
 	private static final byte MSG_FEE[] = { 'f', 'e', 'e' };
 	private static final byte MSG_MBTC[] = { 'm', 'B', 'T', 'C' };
 
-	private static ESUtil esUtil = null;
+	// private static ESUtil esUtil = null;
 
 	private static final byte PIN_SIZE = 4;
 	public static final byte VCODE_SIZE = 4;
@@ -47,7 +47,7 @@ public class Display {
 	private MessageDigest sha1;
 
 	public Display() {
-		esUtil = new ESUtil();
+		// esUtil = new ESUtil();
 		randomData = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
 		keypad = JCSystem.makeTransientByteArray((short) 10, JCSystem.CLEAR_ON_DESELECT);
 		sha1 = MessageDigest.getInstance(MessageDigest.ALG_SHA, false);
@@ -257,10 +257,10 @@ public class Display {
 
 	public boolean displayText(byte[] inBuff, short inOffset, short inLength) {
 
-		String message = new String(inBuff, inOffset + 8, inLength - 8);
-		java.lang.System.out.println(message);
+		// String message = new String(inBuff, inOffset + 8, inLength - 8);
+		// java.lang.System.out.println(message);
 
-		esUtil.clearScreen();
+		// esUtil.clearScreen();
 
 		short dataLength = (short) (inLength - 8);
 
@@ -275,6 +275,7 @@ public class Display {
 		inBuff[offset++] = (byte) ((dataLength & (short) 0xFF00) >> 8);
 		inBuff[offset++] = (byte) (dataLength & (short) 0x00FF); // Text length
 
-		return esUtil.displayText(inBuff, inOffset, inLength);
+		// return esUtil.displayText(inBuff, inOffset, inLength);
+		return true;
 	}
 }
