@@ -26,7 +26,7 @@ public class Display {
 	public static final byte MSG_PIN[] = { 'E', 'n', 't', 'e', 'r', ' ', 'P', 'I', 'N' };
 	public static final byte MSG_IMPORT[] = { 'I', 'm', 'p', 'o', 'r', 't', ' ', 'v', 'c', 'o', 'd', 'e', '2', ':',
 			' ' };
-	public static final byte MSG_EXPORT[] = { 'I', 'm', 'p', 'o', 'r', 't', ' ', 'v', 'c', 'o', 'd', 'e', '1', ':',
+	public static final byte MSG_EXPORT[] = { 'E', 'x', 'p', 'o', 'r', 't', ' ', 'v', 'c', 'o', 'd', 'e', '1', ':',
 			' ' };
 	public static final byte MSG_VCODE1[] = { 'v', 'c', 'o', 'd', 'e', '1', ':' };
 	public static final byte MSG_VCODE2[] = { 'v', 'c', 'o', 'd', 'e', '2', ':' };
