@@ -13,8 +13,8 @@
       sources="../src/main/java/BitaWalletCard">
         <applet class="BitaWalletCard.BitaWalletCard" 
         aid="FFBC00000001"/>
-        <!-- <import exps="lib/exp" 
-        jar="../lib/specialmethod.jar"/> -->
+        <import exps="lib/exp" 
+        jar="../lib/specialmethod.jar"/>
       </cap>
     </javacard>
   </target>

@@ -3,7 +3,7 @@ package BitaWalletCard;
 import javacard.framework.*;
 import javacard.security.*;
 
-// import com.es.specialmethod.ESUtil;
+import com.es.specialmethod.ESUtil;
 
 public class Display {
 
@@ -12,8 +12,6 @@ public class Display {
 	private static final byte NEWLINE = (byte) 0x0A;
 	private static final byte SPACE = (byte) ' ';
 	private static final short HEADER_SIZE = 8;
-
-	private static final short MAX_IMG_DATA_EACH_PKT = (short) 240;
 
 	public static final byte MSG_HOME[] = { ' ', ' ', ' ', 'X', 'e', 'b', 'a', 'W', 'a', 'l', 'l', 'e', 't' };
 	public static final byte MSG_SUCCESSFUL[] = { ' ', ' ', ' ', 'S', 'u', 'c', 'c', 'e', 's', 's', 'f', 'u', 'l' };
@@ -37,7 +35,7 @@ public class Display {
 	private static final byte MSG_FEE[] = { 'f', 'e', 'e' };
 	private static final byte MSG_MBTC[] = { 'm', 'B', 'T', 'C' };
 
-	// private static ESUtil esUtil = null;
+	private static ESUtil esUtil = null;
 
 	private static final byte PIN_SIZE = 4;
 	public static final byte VCODE_SIZE = 4;
@@ -47,15 +45,14 @@ public class Display {
 	private MessageDigest sha1;
 
 	public Display() {
-		// esUtil = new ESUtil();
+		esUtil = new ESUtil();
 		randomData = RandomData.getInstance(RandomData.ALG_SECURE_RANDOM);
 		keypad = JCSystem.makeTransientByteArray((short) 10, JCSystem.CLEAR_ON_DESELECT);
 		sha1 = MessageDigest.getInstance(MessageDigest.ALG_SHA, false);
 	}
 
-	public boolean initialize() {
+	public void initialize() {
 		isHomeScreen = false;
-		return true;
 	}
 
 	public boolean homeScreen(byte[] scratch, short scratchOffset) {
@@ -255,12 +252,15 @@ public class Display {
 		return offset;
 	}
 
-	public boolean displayText(byte[] inBuff, short inOffset, short inLength) {
+	private boolean displayText(byte[] inBuff, short inOffset, short inLength) {
 
 		// String message = new String(inBuff, inOffset + 8, inLength - 8);
 		// java.lang.System.out.println(message);
 
-		// esUtil.clearScreen();
+		esUtil.clearScreen();
+
+		if (inLength > 78)
+			inLength = 78;
 
 		short dataLength = (short) (inLength - 8);
 
@@ -275,7 +275,7 @@ public class Display {
 		inBuff[offset++] = (byte) ((dataLength & (short) 0xFF00) >> 8);
 		inBuff[offset++] = (byte) (dataLength & (short) 0x00FF); // Text length
 
-		// return esUtil.displayText(inBuff, inOffset, inLength);
-		return true;
+		return esUtil.displayText(inBuff, inOffset, inLength);
+		// return true;
 	}
 }

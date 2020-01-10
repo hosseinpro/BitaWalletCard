@@ -1,7 +1,5 @@
 package BitaWalletCard;
 
-import javax.tools.Diagnostic;
-
 import javacard.framework.*;
 import javacard.security.*;
 import javacardx.apdu.ExtendedLength;
@@ -66,7 +64,6 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     private Display display;
     private BIP bip;
 
-    private byte[] buf;
     private short lc;
     private short offData;
 
@@ -122,7 +119,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         }
 
         apdu.setIncomingAndReceive();
-        buf = apdu.getBuffer();
+        byte[] buf = apdu.getBuffer();
         offData = apdu.getOffsetCdata();
         lc = apdu.getIncomingLength();
         byte cla = buf[OFFSET_CLA];
@@ -199,6 +196,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             ISOException.throwIt(SW_WRONG_LENGTH);
         }
 
+        byte[] buf = apdu.getBuffer();
         display.decodeKeypad(buf, OFFSET_CDATA, scratch515, (short) 0);
 
         if (commandLock == CL_WIPE) {
@@ -239,6 +237,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         // [1]: labelLen
         // [2..]: label
         // [labelLen..]: master seed (optional)
+        byte[] buf = apdu.getBuffer();
         short labelLen = buf[(short) (offData + 1)];
         if (labelLen > LABEL_SIZE_MAX) {
             display.message(Display.MSG_FAILED, (short) 0, (short) Display.MSG_FAILED.length, scratch515, (short) 0);
@@ -331,6 +330,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             ISOException.throwIt(SW_WRONG_LENGTH);
         }
 
+        byte[] buf = apdu.getBuffer();
         display.decodeKeypad(buf, OFFSET_CDATA, scratch515, (short) 0);
 
         // first call, set PIN
@@ -396,6 +396,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         short publicKeyLength = lc;
 
         // [0..64]: transport key public
+        byte[] buf = apdu.getBuffer();
         Util.arrayCopyNonAtomic(buf, OFFSET_CDATA, commandBuffer129, (short) 0, (publicKeyLength));
 
         // display random buttons
@@ -466,6 +467,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
         // [0..64] : transport key public
         // [65..129] : encrypted master key
+        byte[] buf = apdu.getBuffer();
         Util.arrayCopyNonAtomic(buf, OFFSET_CDATA, commandBuffer129, (short) 0, lc);
 
         // display random buttons
@@ -510,6 +512,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
 
         // [0]: count
         // [x5]: keyPath
+        byte[] buf = apdu.getBuffer();
         Util.arrayCopyNonAtomic(buf, OFFSET_CDATA, commandBuffer129, (short) 0, lc);
 
         // display random buttons
@@ -668,6 +671,7 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
             ISOException.throwIt(SW_COMMAND_NOT_ALLOWED);
         }
 
+        byte[] buf = apdu.getBuffer();
         Util.arrayCopyNonAtomic(buf, OFFSET_CDATA, commandBuffer129, (short) 0, lc);
 
         // commandBuffer
