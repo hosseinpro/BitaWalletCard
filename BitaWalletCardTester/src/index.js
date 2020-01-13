@@ -48,7 +48,7 @@ var recursiveAsyncReadLine = function() {
           cardreaderList = listReaders();
           connect("0");
           setTimeout(() => {
-            bitaWalletCard.selectApplet();
+            bitaWalletCard.getInfo();
           }, 500);
           break;
         case "listreaders":
@@ -135,27 +135,6 @@ var recursiveAsyncReadLine = function() {
               result.inputSection,
               result.signerKeyPaths
             );
-
-            // const fund = 2550000;
-            // const changeKeyPath = "6D2C0000010000";
-            // const inputSection1 =
-            //   "011179c473e6edbdd22d6f41f585ee24ac1ef5f754743dd27a1c490dace4e8e04a000000001976a914cea064ea822a6de4441ce2b77ad9f15f8e29523d88acFFFFFFFF";
-            // const signerKeyPaths = "6D2C0000000002";
-
-            // bitaWalletCard
-            //   .signTx(
-            //     yesCode,
-            //     fund,
-            //     changeKeyPath,
-            //     inputSection1,
-            //     signerKeyPaths
-            //   )
-            //   .then(res => {
-            //     print(res.signedTx);
-            //   })
-            //   .catch(err => {
-            //     print(err);
-            //   });
           }
           break;
         case "exit":

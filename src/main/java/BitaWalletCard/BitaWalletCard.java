@@ -522,6 +522,8 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
     }
 
     private void commitGetXPubs(APDU apdu) {
+        display.homeScreen(scratch515, (short) 0);
+
         short offset = 0;
         short commandBufferOffset = 1;
         short count = commandBuffer129[0];
@@ -532,8 +534,6 @@ public class BitaWalletCard extends Applet implements ISO7816, ExtendedLength {
         }
 
         sendLongResponse(apdu, (short) 0, offset);
-
-        display.homeScreen(scratch515, (short) 0);
     }
 
     // private short toBigEndian(byte[] leNumber, short leNumberOffset, byte[]

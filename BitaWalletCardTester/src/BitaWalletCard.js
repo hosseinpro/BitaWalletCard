@@ -202,12 +202,9 @@ module.exports = class BitaWalletCard {
 
   ////Begin of card functions
 
-  async selectApplet() {
+  async getInfo() {
     const apduSelectApplet = "00 A4 04 00 06 FFBC00000001";
     await this.transmit(apduSelectApplet);
-  }
-
-  async getInfo() {
     const apduGetInfo = "00 11 00 00 00";
     let responseAPDU = await this.transmit(apduGetInfo);
     const serialNumber = responseAPDU.data.substr(0, 16);
@@ -219,14 +216,16 @@ module.exports = class BitaWalletCard {
   async verifyPIN(cardPIN) {
     const apduVerifyPIN = "00 20 00 00 04" + BitaWalletCard.ascii2hex(cardPIN);
     try {
-      await this.transmit(apduVerifyPIN);
+      const res = await this.transmit(apduVerifyPIN);
+      return res.data;
     } catch (res) {
-      if (res.error.responseAPDU === undefined) throw res;
+      if (res.error.responseAPDU === undefined) throw { error: res };
       else if (res.error.responseAPDU.sw.substring(0, 3) === "63C") {
         const leftTries = parseInt(res.error.responseAPDU.sw.substring(3), 16);
-        return leftTries;
+        // return leftTries;
+        throw { error: "Incorrect PIN", leftTries };
       } else {
-        throw res;
+        throw { error: res };
       }
     }
   }
@@ -358,7 +357,7 @@ module.exports = class BitaWalletCard {
 
   async cancel() {
     try {
-      await this.getSerialNumber();
+      await this.getInfo();
     } catch (error) {}
   }
 
