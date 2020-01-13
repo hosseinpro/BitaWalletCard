@@ -1,19 +1,10 @@
-// Version: 1.8
+// Version: 2.0
 
-const sha = require("jssha");
 const Base64 = require("../src/Base64.js");
 
 module.exports = class BitaWalletCard {
   constructor(cardreaderTransmit) {
     this.cardreaderTransmit = cardreaderTransmit;
-  }
-
-  static get btcMain() {
-    return "BTC";
-  }
-
-  static get btcTest() {
-    return "TST";
   }
 
   ////Begin of Utils
