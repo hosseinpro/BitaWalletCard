@@ -1,6 +1,6 @@
 // Version: 2.0
 
-const Base64 = require("../src/Base64.js");
+const Base64 = require("./Base64.js");
 
 module.exports = class BitaWalletCard {
   constructor(cardreaderTransmit) {
