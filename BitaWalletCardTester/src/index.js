@@ -86,7 +86,7 @@ var recursiveAsyncReadLine = function() {
           await bitaWalletCard.setPIN(inputs[1]);
           break;
         case "changepin":
-          await bitaWalletCard.changePIN(inputs[1]);
+          await bitaWalletCard.changePIN();
           break;
         case "exportmasterseed": //backupCardTransportKeyPublic
           await bitaWalletCard.exportMasterSeed(inputs[1]);
@@ -95,7 +95,7 @@ var recursiveAsyncReadLine = function() {
           await bitaWalletCard.importMasterSeed(inputs[1]);
           break;
         case "getxpubs": //count (dec), keyPaths[5]
-          bitaWalletCard.getXPubs(inputs[1], inputs[2]);
+          await bitaWalletCard.getXPubs(inputs[1], inputs[2]);
           break;
         case "filladdressinfo": //keyPath, prevTxHash, prevTxUTXO, prevTxValue
           {
@@ -126,7 +126,7 @@ var recursiveAsyncReadLine = function() {
               break;
             }
 
-            bitaWalletCard.signTx(
+            await bitaWalletCard.signTx(
               spend,
               fee,
               destAddress,
