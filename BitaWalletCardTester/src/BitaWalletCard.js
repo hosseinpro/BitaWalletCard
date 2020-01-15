@@ -218,14 +218,13 @@ module.exports = class BitaWalletCard {
     try {
       const res = await this.transmit(apduVerifyPIN);
       return res.data;
-    } catch (res) {
-      if (res.error.responseAPDU === undefined) throw { error: res };
-      else if (res.error.responseAPDU.sw.substring(0, 3) === "63C") {
-        const leftTries = parseInt(res.error.responseAPDU.sw.substring(3), 16);
-        // return leftTries;
-        throw { error: "Incorrect PIN", leftTries };
+    } catch (err) {
+      if (err.error.responseAPDU === undefined) throw { error: err };
+      else if (err.error.responseAPDU.sw.substring(0, 3) === "63C") {
+        const leftTries = parseInt(err.error.responseAPDU.sw.substring(3), 16);
+        throw { message: "Incorrect PIN", leftTries };
       } else {
-        throw { error: res };
+        throw { error: err };
       }
     }
   }
@@ -262,7 +261,16 @@ module.exports = class BitaWalletCard {
 
   async setPIN(cardNewPIN) {
     const apduSetPIN = "00 21 00 00 04" + BitaWalletCard.ascii2hex(cardNewPIN);
-    await this.transmit(apduSetPIN);
+    try {
+      await this.transmit(apduSetPIN);
+    } catch (err) {
+      if (err.error.responseAPDU === undefined) throw { error: err };
+      else if (err.error.responseAPDU.sw === "6984") {
+        throw { message: "PIN mismatch" };
+      } else {
+        throw { error: err };
+      }
+    }
   }
 
   async changePIN() {
