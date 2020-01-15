@@ -130,7 +130,7 @@ public class Display {
 
 		byte[] temp = new byte[1];
 
-		for (short i = 0; i < (short) 7; i++) {
+		for (short i = 0; i < (short) 20; i++) {
 			do {
 				randomData.generateData(temp, (short) 0, (short) 1);
 			} while (temp[(short) 0] < 0);
