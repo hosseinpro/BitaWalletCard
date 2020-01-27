@@ -21,6 +21,9 @@ dependencies {
     // This dependency is found on compile classpath of this component and consumers.
     compile 'com.google.guava:guava:23.0'
 
+    // implementation files('lib/jcardsim-3.0.5-SNAPSHOT.jar')
+    // implementation files('lib/api-jcopx-2.4.2_R1-7.0.1.jar')
+    
     compile fileTree(dir: 'lib', include: ['*.jar'])
 }
 
